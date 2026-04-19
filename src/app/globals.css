@@ -1,26 +1,109 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Azul de marca en botones, enlaces y focos. El resto: grises y blancos. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fafafa;
+  --foreground: #18181b;
+  --brand: #2563eb;
+  --brand-hover: #1d4ed8;
+  --brand-foreground: #ffffff;
+  --brand-soft: #eff6ff;
+  --brand-muted: #dbeafe;
+  --brand-border: #bfdbfe;
+  --accent: #1d4ed8;
+  --accent-hover: #1e3a8a;
+}
+
+.dark {
+  --background: #09090b;
+  --foreground: #e4e4e7;
+  --brand: #3b82f6;
+  --brand-hover: #60a5fa;
+  --brand-foreground: #ffffff;
+  --brand-soft: #27272a;
+  --brand-muted: #3f3f46;
+  --brand-border: #3f3f46;
+  --accent: #93c5fd;
+  --accent-hover: #bfdbfe;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-fg: var(--brand-foreground);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-muted: var(--brand-muted);
+  --color-brand-border: var(--brand-border);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+::selection {
+  background: #bfdbfe;
+  color: #18181b;
+}
+
+.dark ::selection {
+  background: #1e3a8a;
+  color: #f4f4f5;
+}
+
+/* Gráfica de barras (ingresos): animación fiable sin depender solo de transform + transition */
+@keyframes revenue-bar-rise {
+  0% {
+    transform: scaleY(0) translateZ(0);
+    opacity: 0.96;
+  }
+  100% {
+    transform: scaleY(1) translateZ(0);
+    opacity: 1;
+  }
+}
+
+.revenue-bar-rise {
+  transform-origin: bottom center;
+  animation: revenue-bar-rise 0.78s cubic-bezier(0.22, 1, 0.36, 1) both;
+  backface-visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .revenue-bar-rise {
+    animation: none;
+    transform: scaleY(1);
+    opacity: 1;
+  }
+
+  .revenue-label-rise {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes revenue-label-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.revenue-label-rise {
+  animation: revenue-label-rise 0.45s ease forwards;
+  opacity: 0;
 }
