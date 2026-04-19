@@ -1,0 +1,637 @@
+"use client";
+
+import { useActionState, useCallback, useEffect, useMemo, useState } from "react";
+import {
+  addInvoiceLineAction,
+  deleteInvoiceLineAction,
+  issueInvoiceAction,
+  type InvoiceActionState,
+} from "@/app/actions/invoices";
+import { addPaymentAction, type PaymentActionState } from "@/app/actions/payments";
+import { effectiveInvoiceStatus } from "@/lib/invoice-status";
+import { formatMoneyEUR, roundCurrencyEUR } from "@/lib/money";
+import Link from "next/link";
+
+const initial: InvoiceActionState = {};
+const payInitial: PaymentActionState = {};
+
+type Line = {
+  id: string;
+  line_number: number;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  tax_rate: number;
+  line_net: number;
+  line_tax: number;
+  line_total: number;
+};
+
+type ProductOpt = {
+  id: string;
+  name: string;
+  unit_price: number;
+  tax_rate: number;
+};
+
+type InvoiceHead = {
+  id: string;
+  series: string;
+  year: number;
+  number: number | null;
+  status: string;
+  issue_date: string | null;
+  due_date: string | null;
+  subtotal: number;
+  tax_amount: number;
+  total: number;
+  clients: { name: string; tax_id: string | null } | null;
+};
+
+type PaymentRow = {
+  id: string;
+  amount: number;
+  paid_at: string;
+  method: string | null;
+  notes: string | null;
+};
+
+function formatUnitForInput(price: number): string {
+  return (Math.round(price * 100) / 100).toFixed(2);
+}
+
+function formatTaxForInput(tax: number): string {
+  if (Number.isInteger(tax)) return String(tax);
+  return String(tax);
+}
+
+function statusLabel(s: string) {
+  const map: Record<string, string> = {
+    draft: "Borrador",
+    issued: "Emitida",
+    partial: "Parcialmente pagada",
+    paid: "Pagada",
+    cancelled: "Anulada",
+    overdue: "Vencida",
+  };
+  return map[s] ?? s;
+}
+
+export function InvoiceDetailForm({
+  invoice,
+  lines,
+  products,
+  payments = [],
+}: {
+  invoice: InvoiceHead;
+  lines: Line[];
+  products: ProductOpt[];
+  payments?: PaymentRow[];
+}) {
+  const isDraft = invoice.status === "draft";
+
+  const [showAddLineForm, setShowAddLineForm] = useState(false);
+
+  const productById = useMemo(() => {
+    const m = new Map<string, ProductOpt>();
+    for (const p of products) m.set(p.id, p);
+    return m;
+  }, [products]);
+
+  const [addLineProductId, setAddLineProductId] = useState("");
+  const [addLineDescription, setAddLineDescription] = useState("");
+  const [addLineQuantity, setAddLineQuantity] = useState("1");
+  const [addLineUnitPrice, setAddLineUnitPrice] = useState("");
+  const [addLineTaxRate, setAddLineTaxRate] = useState("21");
+
+  useEffect(() => {
+    if (!showAddLineForm || !isDraft) return;
+    setAddLineProductId("");
+    setAddLineDescription("");
+    setAddLineQuantity("1");
+    setAddLineUnitPrice("");
+    setAddLineTaxRate("21");
+  }, [showAddLineForm, isDraft]);
+
+  const onAddLineProductChange = useCallback(
+    (productId: string) => {
+      setAddLineProductId(productId);
+      if (!productId) {
+        setAddLineDescription("");
+        setAddLineUnitPrice("");
+        setAddLineTaxRate("21");
+        return;
+      }
+      const p = productById.get(productId);
+      if (!p) return;
+      setAddLineDescription(p.name);
+      setAddLineUnitPrice(formatUnitForInput(p.unit_price));
+      setAddLineTaxRate(formatTaxForInput(p.tax_rate));
+    },
+    [productById],
+  );
+
+  const addLineAndMaybeClose = useCallback(
+    async (prev: InvoiceActionState, formData: FormData) => {
+      const result = await addInvoiceLineAction(prev, formData);
+      if (result?.ok) {
+        setShowAddLineForm(false);
+      }
+      return result;
+    },
+    [],
+  );
+
+  const [lineState, addLine, linePending] = useActionState(
+    addLineAndMaybeClose,
+    initial,
+  );
+  const [delState, deleteLine, delPending] = useActionState(
+    deleteInvoiceLineAction,
+    initial,
+  );
+  const [issueState, issueForm, issuePending] = useActionState(
+    issueInvoiceAction,
+    initial,
+  );
+  const [payState, payForm, payPending] = useActionState(
+    addPaymentAction,
+    payInitial,
+  );
+
+  const paidSum = roundCurrencyEUR(
+    payments.reduce((s, p) => s + p.amount, 0),
+  );
+  const pendingToPay = roundCurrencyEUR(invoice.total - paidSum);
+
+  const displayStatus = useMemo(
+    () =>
+      effectiveInvoiceStatus({
+        status: invoice.status,
+        total: invoice.total,
+        paidSum,
+        issue_date: invoice.issue_date,
+        due_date: invoice.due_date,
+      }),
+    [invoice.status, invoice.total, invoice.issue_date, invoice.due_date, paidSum],
+  );
+
+  const canRegisterPayment =
+    displayStatus === "issued" ||
+    displayStatus === "overdue" ||
+    displayStatus === "partial";
+
+  return (
+    <div className="flex flex-col gap-8">
+      <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+        {!isDraft ? (
+          <dl className="grid gap-2 text-sm sm:grid-cols-2">
+            <div>
+              <dt className="text-zinc-500">Emisión</dt>
+              <dd>{invoice.issue_date ?? "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-zinc-500">Vencimiento</dt>
+              <dd>{invoice.due_date ?? "—"}</dd>
+            </div>
+          </dl>
+        ) : (
+          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            Borrador · la fecha de emisión se registrará al emitir la factura.
+          </p>
+        )}
+      </div>
+
+      <section>
+        <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+          Líneas
+        </h2>
+        {lines.length === 0 ? (
+          !isDraft ? (
+            <p className="rounded-xl border border-dashed border-zinc-300 px-4 py-8 text-center text-sm text-zinc-600 dark:border-zinc-700 dark:text-zinc-400">
+              Sin líneas.
+            </p>
+          ) : !showAddLineForm ? (
+            <div className="flex flex-col items-center justify-center gap-5 rounded-xl border border-dashed border-zinc-300 bg-zinc-50/80 px-6 py-12 text-center dark:border-zinc-600 dark:bg-zinc-900/40">
+              <div>
+                <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                  Aún no hay líneas en esta factura
+                </p>
+                <p className="mt-1 max-w-sm text-sm text-zinc-500 dark:text-zinc-400">
+                  Elige un producto del catálogo (se rellenan precio e IVA) o una línea
+                  libre y escribe tú el concepto y los importes.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddLineForm(true)}
+                aria-label="Añadir la primera línea a la factura"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-brand-fg shadow-sm transition hover:bg-brand-hover focus:outline-none focus:ring-2 focus:ring-brand/40 focus:ring-offset-2 dark:focus:ring-offset-zinc-900"
+              >
+                <span className="text-lg leading-none" aria-hidden>
+                  +
+                </span>
+                Añadir primera línea
+              </button>
+            </div>
+          ) : null
+        ) : (
+          <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+            <table className="w-full min-w-[36rem] text-left text-sm">
+              <thead>
+                <tr className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800">
+                  <th className="px-3 py-2">#</th>
+                  <th className="px-3 py-2">Descripción</th>
+                  <th className="px-3 py-2 text-right">Cant.</th>
+                  <th className="px-3 py-2 text-right">P. unit.</th>
+                  <th className="px-3 py-2 text-right">IVA</th>
+                  <th className="px-3 py-2 text-right">Total</th>
+                  {isDraft ? <th className="px-3 py-2" /> : null}
+                </tr>
+              </thead>
+              <tbody>
+                {lines.map((l) => (
+                  <tr
+                    key={l.id}
+                    className="border-b border-zinc-100 last:border-0 dark:border-zinc-800/80"
+                  >
+                    <td className="px-3 py-2 tabular-nums text-zinc-600">
+                      {l.line_number}
+                    </td>
+                    <td className="max-w-[14rem] px-3 py-2 text-zinc-900 dark:text-zinc-50">
+                      {l.description}
+                    </td>
+                    <td className="px-3 py-2 text-right tabular-nums">
+                      {l.quantity}
+                    </td>
+                    <td className="px-3 py-2 text-right tabular-nums">
+                      {formatMoneyEUR(l.unit_price)}
+                    </td>
+                    <td className="px-3 py-2 text-right tabular-nums">
+                      {l.tax_rate}%
+                    </td>
+                    <td className="px-3 py-2 text-right tabular-nums font-medium">
+                      {formatMoneyEUR(l.line_total)}
+                    </td>
+                    {isDraft ? (
+                      <td className="px-3 py-2">
+                        <form action={deleteLine}>
+                          <input type="hidden" name="invoice_id" value={invoice.id} />
+                          <input type="hidden" name="line_id" value={l.id} />
+                          <button
+                            type="submit"
+                            disabled={delPending}
+                            className="text-xs font-medium text-red-600 hover:underline disabled:opacity-50 dark:text-red-400"
+                          >
+                            Quitar
+                          </button>
+                        </form>
+                      </td>
+                    ) : null}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {isDraft && lines.length > 0 && !showAddLineForm ? (
+          <div className="mt-3 flex justify-start">
+            <button
+              type="button"
+              onClick={() => setShowAddLineForm(true)}
+              aria-label="Añadir otra línea"
+              className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-800 shadow-sm transition hover:border-brand-border hover:bg-brand-soft dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-brand-border dark:hover:bg-brand-soft"
+            >
+              <span
+                className="flex size-7 items-center justify-center rounded-md bg-brand text-sm leading-none text-brand-fg"
+                aria-hidden
+              >
+                +
+              </span>
+              Añadir línea
+            </button>
+          </div>
+        ) : null}
+
+        {lineState?.error ? (
+          <p className="mt-2 text-sm text-red-600 dark:text-red-400" role="alert">
+            {lineState.error}
+          </p>
+        ) : null}
+        {delState?.error ? (
+          <p className="mt-2 text-sm text-red-600 dark:text-red-400" role="alert">
+            {delState.error}
+          </p>
+        ) : null}
+
+        {isDraft && showAddLineForm ? (
+          <div className="mt-4">
+            <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+              <div className="mb-4 flex items-center justify-between gap-2">
+                  <h3 className="font-semibold text-zinc-900 dark:text-zinc-50">
+                    Nueva línea
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddLineForm(false)}
+                    className="text-sm text-zinc-500 underline-offset-2 hover:text-zinc-800 hover:underline dark:text-zinc-400 dark:hover:text-zinc-200"
+                  >
+                    Cerrar
+                  </button>
+              </div>
+              <form action={addLine} className="flex flex-col gap-4">
+                  <input type="hidden" name="invoice_id" value={invoice.id} />
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                    Si eliges un producto del catálogo, se rellenan concepto, precio unitario
+                    e IVA; puedes cambiarlos antes de guardar. Con{" "}
+                    <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                      línea libre
+                    </span>{" "}
+                    escribes tú todo (gastos puntuales, textos a medida, etc.).
+                  </p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label className="flex flex-col gap-1 text-sm sm:col-span-2">
+                      <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                        Producto / servicio (opcional)
+                      </span>
+                      <select
+                        name="product_id"
+                        value={addLineProductId}
+                        onChange={(e) => onAddLineProductChange(e.target.value)}
+                        className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                      >
+                        <option value="">— Línea libre (sin catálogo) —</option>
+                        {products.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name} ({formatMoneyEUR(p.unit_price)})
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="flex flex-col gap-1 text-sm sm:col-span-2">
+                      <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                        Concepto / descripción <span className="text-red-600">*</span>
+                      </span>
+                      <input
+                        name="description"
+                        required
+                        value={addLineDescription}
+                        onChange={(e) => setAddLineDescription(e.target.value)}
+                        placeholder="Ej. Licencia software, horas de consultoría…"
+                        className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                      />
+                    </label>
+                    <label className="flex flex-col gap-1 text-sm">
+                      <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                        Cantidad
+                      </span>
+                      <input
+                        name="quantity"
+                        required
+                        value={addLineQuantity}
+                        onChange={(e) => setAddLineQuantity(e.target.value)}
+                        inputMode="decimal"
+                        className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                      />
+                    </label>
+                    <label className="flex flex-col gap-1 text-sm">
+                      <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                        Precio unitario (€) <span className="text-red-600">*</span>
+                      </span>
+                      <input
+                        name="unit_price"
+                        required
+                        value={addLineUnitPrice}
+                        onChange={(e) => setAddLineUnitPrice(e.target.value)}
+                        inputMode="decimal"
+                        placeholder="0,00"
+                        className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                      />
+                    </label>
+                    <label className="flex flex-col gap-1 text-sm sm:col-span-2">
+                      <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                        IVA (%)
+                      </span>
+                      <input
+                        name="tax_rate"
+                        value={addLineTaxRate}
+                        onChange={(e) => setAddLineTaxRate(e.target.value)}
+                        inputMode="decimal"
+                        className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                      />
+                    </label>
+                  </div>
+                <button
+                  type="submit"
+                  disabled={linePending}
+                  className="inline-flex h-10 max-w-xs items-center justify-center rounded-lg bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+                >
+                  {linePending ? "Añadiendo…" : "Guardar línea"}
+                </button>
+              </form>
+            </div>
+          </div>
+        ) : null}
+      </section>
+
+      <div className="flex flex-col gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-6 py-4 dark:border-zinc-800 dark:bg-zinc-900/40">
+        <div className="flex justify-between text-sm">
+          <span className="text-zinc-600 dark:text-zinc-400">Base imponible</span>
+          <span className="tabular-nums font-medium">
+            {formatMoneyEUR(invoice.subtotal)}
+          </span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-zinc-600 dark:text-zinc-400">IVA</span>
+          <span className="tabular-nums font-medium">
+            {formatMoneyEUR(invoice.tax_amount)}
+          </span>
+        </div>
+        <div className="flex justify-between border-t border-zinc-200 pt-2 text-base dark:border-zinc-700">
+          <span className="font-semibold text-zinc-900 dark:text-zinc-50">Total</span>
+          <span className="tabular-nums font-semibold text-zinc-900 dark:text-zinc-50">
+            {formatMoneyEUR(invoice.total)}
+          </span>
+        </div>
+      </div>
+
+      {!isDraft ? (
+        <section>
+          <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            Pagos
+          </h2>
+          <div className="mb-4 flex flex-wrap gap-4 rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm dark:border-zinc-700 dark:bg-zinc-900">
+            <div>
+              <span className="text-zinc-500 dark:text-zinc-400">Cobrado</span>
+              <p className="font-semibold tabular-nums text-zinc-900 dark:text-zinc-50">
+                {formatMoneyEUR(paidSum)}
+              </p>
+            </div>
+            {displayStatus !== "paid" ? (
+              <div>
+                <span className="text-zinc-500 dark:text-zinc-400">
+                  Pendiente
+                </span>
+                <p className="font-semibold tabular-nums text-amber-800 dark:text-amber-200">
+                  {formatMoneyEUR(Math.max(0, pendingToPay))}
+                </p>
+              </div>
+            ) : null}
+          </div>
+          {payments.length > 0 ? (
+            <div className="mb-4 overflow-x-auto rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+              <table className="w-full min-w-[28rem] text-left text-sm">
+                <thead>
+                  <tr className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800">
+                    <th className="px-3 py-2">Fecha</th>
+                    <th className="px-3 py-2 text-right">Importe</th>
+                    <th className="px-3 py-2">Método</th>
+                    <th className="px-3 py-2">Notas</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {payments.map((p) => (
+                    <tr
+                      key={p.id}
+                      className="border-b border-zinc-100 last:border-0 dark:border-zinc-800/80"
+                    >
+                      <td className="px-3 py-2 text-zinc-700 dark:text-zinc-300">
+                        {new Date(p.paid_at).toLocaleString("es-ES", {
+                          dateStyle: "short",
+                          timeStyle: "short",
+                        })}
+                      </td>
+                      <td className="px-3 py-2 text-right font-medium tabular-nums">
+                        {formatMoneyEUR(p.amount)}
+                      </td>
+                      <td className="px-3 py-2 text-zinc-600 dark:text-zinc-400">
+                        {p.method ?? "—"}
+                      </td>
+                      <td className="max-w-[12rem] truncate px-3 py-2 text-zinc-600 dark:text-zinc-400">
+                        {p.notes ?? "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
+              Aún no hay cobros registrados.
+            </p>
+          )}
+          {canRegisterPayment ? (
+            <form
+              action={payForm}
+              className="flex flex-col gap-4 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900"
+            >
+              <h3 className="font-semibold text-zinc-900 dark:text-zinc-50">
+                Registrar cobro
+              </h3>
+              <input type="hidden" name="invoice_id" value={invoice.id} />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="flex flex-col gap-1 text-sm">
+                  <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                    Importe (€) <span className="text-red-600">*</span>
+                  </span>
+                  <input
+                    name="amount"
+                    required
+                    inputMode="decimal"
+                    placeholder={
+                      pendingToPay > 0
+                        ? pendingToPay.toFixed(2)
+                        : undefined
+                    }
+                    className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-sm">
+                  <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                    Fecha y hora
+                  </span>
+                  <input
+                    type="datetime-local"
+                    name="paid_at"
+                    className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-sm sm:col-span-2">
+                  <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                    Método (transferencia, tarjeta…)
+                  </span>
+                  <input
+                    name="method"
+                    className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-sm sm:col-span-2">
+                  <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                    Notas
+                  </span>
+                  <input
+                    name="notes"
+                    className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                  />
+                </label>
+              </div>
+              {payState?.error ? (
+                <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+                  {payState.error}
+                </p>
+              ) : null}
+              <button
+                type="submit"
+                disabled={payPending}
+                className="inline-flex h-10 max-w-xs items-center justify-center rounded-lg bg-brand px-4 text-sm font-medium text-brand-fg hover:bg-brand-hover disabled:opacity-60"
+              >
+                {payPending ? "Guardando…" : "Registrar pago"}
+              </button>
+            </form>
+          ) : null}
+        </section>
+      ) : null}
+
+      {isDraft ? (
+        <form
+          action={issueForm}
+          className="flex flex-col gap-4 rounded-xl border border-brand-border bg-brand-soft p-6 dark:border-brand-border/50 dark:bg-brand-soft"
+        >
+          <h3 className="font-semibold text-accent">
+            Emitir factura
+          </h3>
+          <input type="hidden" name="invoice_id" value={invoice.id} />
+          <label className="flex max-w-xs flex-col gap-1 text-sm">
+            <span className="font-medium text-accent">
+              Vencimiento (opcional)
+            </span>
+            <input
+              type="date"
+              name="due_date"
+              className="rounded-lg border border-brand-border bg-white px-3 py-2 text-zinc-900 dark:border-brand-border/60 dark:bg-zinc-900 dark:text-zinc-50"
+            />
+          </label>
+          {issueState?.error ? (
+            <p className="text-sm text-red-700 dark:text-red-300" role="alert">
+              {issueState.error}
+            </p>
+          ) : null}
+          <button
+            type="submit"
+            disabled={issuePending}
+            className="inline-flex h-10 max-w-xs items-center justify-center rounded-lg bg-brand px-4 text-sm font-medium text-brand-fg hover:bg-brand-hover disabled:opacity-60"
+          >
+            {issuePending ? "Emitiendo…" : "Emitir y numerar"}
+          </button>
+        </form>
+      ) : null}
+
+      <p className="text-center text-sm text-zinc-500">
+        <Link href="/invoices" className="text-accent hover:text-accent-hover hover:underline">
+          ← Volver al listado
+        </Link>
+      </p>
+    </div>
+  );
+}
