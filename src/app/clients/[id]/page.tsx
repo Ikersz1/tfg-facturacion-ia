@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ClientEditForm } from "@/components/client-form";
 import { PageHeader } from "@/components/page-header";
 import { effectiveInvoiceStatus } from "@/lib/invoice-status";
 import { buildInvoicesListUrl } from "@/lib/invoice-list-url";
@@ -63,7 +64,7 @@ export default async function ClientDetailPage({ params }: PageProps) {
     <div className="flex w-full flex-1 flex-col">
       <PageHeader
         back={{ href: "/clients", label: "← Clientes" }}
-        eyebrow="Facturación"
+        eyebrow="Gestión"
         title={client.name}
         description={client.tax_id ?? undefined}
       />
@@ -82,37 +83,55 @@ export default async function ClientDetailPage({ params }: PageProps) {
           Nueva factura
         </Link>
       </div>
-      <div className="grid gap-6 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 sm:grid-cols-2">
-        <dl className="space-y-2 text-sm">
-          <div>
-            <dt className="text-zinc-500 dark:text-zinc-400">Email</dt>
-            <dd className="text-zinc-900 dark:text-zinc-50">
-              {client.email ?? "—"}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-zinc-500 dark:text-zinc-400">Teléfono</dt>
-            <dd className="text-zinc-900 dark:text-zinc-50">
-              {client.phone ?? "—"}
-            </dd>
-          </div>
-        </dl>
-        <dl className="space-y-2 text-sm">
-          <div>
-            <dt className="text-zinc-500 dark:text-zinc-400">Dirección</dt>
-            <dd className="text-zinc-900 dark:text-zinc-50">
-              {client.address ?? "—"}
-            </dd>
-          </div>
-          {client.notes ? (
+      <div className="grid gap-8 lg:grid-cols-[1fr_minmax(0,28rem)] lg:items-start">
+        <div className="grid gap-6 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 sm:grid-cols-2">
+          <dl className="space-y-2 text-sm">
             <div>
-              <dt className="text-zinc-500 dark:text-zinc-400">Notas</dt>
-              <dd className="whitespace-pre-wrap text-zinc-900 dark:text-zinc-50">
-                {client.notes}
+              <dt className="text-zinc-500 dark:text-zinc-400">Email</dt>
+              <dd className="text-zinc-900 dark:text-zinc-50">
+                {client.email ?? "—"}
               </dd>
             </div>
-          ) : null}
-        </dl>
+            <div>
+              <dt className="text-zinc-500 dark:text-zinc-400">Teléfono</dt>
+              <dd className="text-zinc-900 dark:text-zinc-50">
+                {client.phone ?? "—"}
+              </dd>
+            </div>
+          </dl>
+          <dl className="space-y-2 text-sm">
+            <div>
+              <dt className="text-zinc-500 dark:text-zinc-400">Dirección</dt>
+              <dd className="text-zinc-900 dark:text-zinc-50">
+                {client.address ?? "—"}
+              </dd>
+            </div>
+            {client.notes ? (
+              <div>
+                <dt className="text-zinc-500 dark:text-zinc-400">Notas</dt>
+                <dd className="whitespace-pre-wrap text-zinc-900 dark:text-zinc-50">
+                  {client.notes}
+                </dd>
+              </div>
+            ) : null}
+          </dl>
+        </div>
+        <div>
+          <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            Editar datos
+          </h2>
+          <ClientEditForm
+            client={{
+              id: client.id as string,
+              name: client.name as string,
+              tax_id: (client.tax_id as string | null) ?? null,
+              email: (client.email as string | null) ?? null,
+              phone: (client.phone as string | null) ?? null,
+              address: (client.address as string | null) ?? null,
+              notes: (client.notes as string | null) ?? null,
+            }}
+          />
+        </div>
       </div>
 
       <section>

@@ -71,7 +71,12 @@ export default async function ClientsPage() {
                       className="border-b border-zinc-100 last:border-0 dark:border-zinc-800/80"
                     >
                       <td className="px-4 py-3 font-medium text-zinc-900 dark:text-zinc-50">
-                        {c.name}
+                        <Link
+                          href={`/clients/${c.id}`}
+                          className="text-accent hover:text-accent-hover hover:underline"
+                        >
+                          {c.name}
+                        </Link>
                       </td>
                       <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
                         {c.tax_id ?? "—"}
