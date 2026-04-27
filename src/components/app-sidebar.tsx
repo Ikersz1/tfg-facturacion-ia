@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { logoutAction } from "@/app/actions/auth";
 
 type NavItem = {
   label: string;
@@ -212,17 +211,9 @@ function SidebarNav({
 function SidebarFooter() {
   return (
     <div className="mt-auto border-t border-zinc-200/80 bg-brand-soft/20 px-4 py-3 dark:border-zinc-800/80 dark:bg-transparent">
-      <form action={logoutAction}>
-        <button
-          type="submit"
-          className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium text-zinc-500 transition hover:bg-zinc-100/80 hover:text-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800/60 dark:hover:text-zinc-200"
-        >
-          <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
-          </svg>
-          Cerrar sesión
-        </button>
-      </form>
+      <p className="text-[10px] leading-relaxed text-zinc-400 dark:text-zinc-500">
+        Versión desarrollo · más secciones en roadmap
+      </p>
     </div>
   );
 }
