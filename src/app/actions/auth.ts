@@ -8,6 +8,20 @@ export type AuthState = { error?: string };
 
 export type RegisterState = { error?: string; success?: string };
 
+function isAuthRateLimitError(message: string): boolean {
+  const m = message.toLowerCase();
+  return (
+    m.includes("rate limit") ||
+    m.includes("rate_limit") ||
+    m.includes("too many requests") ||
+    m.includes("over_email_send") ||
+    m.includes("email rate limit") ||
+    m.includes(" 429") ||
+    m.includes("(429)") ||
+    (m.includes("too many") && m.includes("signup"))
+  );
+}
+
 export async function registerAction(
   _prev: RegisterState,
   formData: FormData,
@@ -48,8 +62,11 @@ export async function registerAction(
     ) {
       return { error: "Ya existe una cuenta con este email. Inicia sesión." };
     }
-    if (msg.includes("rate limit") || msg.includes("too many")) {
-      return { error: "Demasiados intentos. Espera un minuto e inténtalo de nuevo." };
+    if (isAuthRateLimitError(msg)) {
+      return {
+        error:
+          "Supabase ha limitado los registros (muchas pruebas seguidas desde tu IP o con ese email). Espera unos 10–60 minutos o cambia de red/VPN. Puedes revisar límites en el panel de Supabase → Authentication.",
+      };
     }
     if (msg.includes("signup") && msg.includes("not allowed")) {
       return { error: "El registro está desactivado en el proyecto (Supabase)." };
