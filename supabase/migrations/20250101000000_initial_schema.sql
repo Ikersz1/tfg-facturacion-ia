@@ -22,7 +22,9 @@ create table if not exists public.products (
   unit_price numeric(14, 4) not null default 0,
   tax_rate numeric(7, 4) not null default 21,
   is_active boolean not null default true,
-  created_at timestamptz not null default now()
+  kind text not null default 'product',
+  created_at timestamptz not null default now(),
+  constraint products_kind_check check (kind in ('product', 'service'))
 );
 
 create table if not exists public.invoices (

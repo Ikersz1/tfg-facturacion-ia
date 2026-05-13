@@ -33,6 +33,9 @@ export async function createProductAction(
     return { error: "El IVA debe estar entre 0 y 100." };
   }
 
+  const kindRaw = formData.get("kind")?.toString();
+  const kind = kindRaw === "service" ? "service" : "product";
+
   const supabase = await createClient();
   const auth = await requireAuthUserId(supabase);
   if ("error" in auth) return { error: auth.error };
@@ -45,14 +48,15 @@ export async function createProductAction(
     unit_price: unitPrice,
     tax_rate: taxRate,
     is_active: formData.get("is_active") === "on",
+    kind,
   });
 
   if (error) {
     return { error: error.message };
   }
 
-  revalidatePath("/products");
-  redirect("/products");
+  revalidatePath("/catalogo");
+  redirect(`/catalogo?kind=${kind}`);
 }
 
 function emptyToNull(v: FormDataEntryValue | null) {

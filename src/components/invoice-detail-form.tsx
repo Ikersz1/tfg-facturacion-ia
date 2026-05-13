@@ -9,6 +9,7 @@ import {
 } from "@/app/actions/invoices";
 import { addPaymentAction, type PaymentActionState } from "@/app/actions/payments";
 import { effectiveInvoiceStatus } from "@/lib/invoice-status";
+import { catalogKindLabel, parseCatalogKind } from "@/lib/catalog-kind";
 import { formatMoneyEUR, roundCurrencyEUR } from "@/lib/money";
 import Link from "next/link";
 
@@ -32,6 +33,7 @@ type ProductOpt = {
   name: string;
   unit_price: number;
   tax_rate: number;
+  kind?: string | null;
 };
 
 type InvoiceHead = {
@@ -364,7 +366,8 @@ export function InvoiceDetailForm({
                         <option value="">— Línea libre (sin catálogo) —</option>
                         {products.map((p) => (
                           <option key={p.id} value={p.id}>
-                            {p.name} ({formatMoneyEUR(p.unit_price)})
+                            {p.name} · {catalogKindLabel(parseCatalogKind(p.kind))} ·{" "}
+                            {formatMoneyEUR(p.unit_price)}
                           </option>
                         ))}
                       </select>

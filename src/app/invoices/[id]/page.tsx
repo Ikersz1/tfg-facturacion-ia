@@ -58,7 +58,7 @@ export default async function InvoiceDetailPage(props: PageProps) {
 
   const { data: products } = await supabase
     .from("products")
-    .select("id, name, unit_price, tax_rate")
+    .select("id, name, unit_price, tax_rate, kind")
     .eq("is_active", true)
     .order("name");
 
@@ -133,6 +133,7 @@ export default async function InvoiceDetailPage(props: PageProps) {
             name: p.name,
             unit_price: Number(p.unit_price),
             tax_rate: Number(p.tax_rate),
+            kind: typeof p.kind === "string" ? p.kind : undefined,
           }))
         }
         payments={

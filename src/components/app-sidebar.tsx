@@ -28,7 +28,7 @@ const SECTIONS: { title: string; items: NavItem[] }[] = [
     items: [
       { label: "Facturas", href: "/invoices", icon: "invoice" },
       { label: "Clientes", href: "/clients", icon: "users" },
-      { label: "Productos", href: "/products", icon: "box" },
+      { label: "Catálogo", href: "/catalogo", icon: "box" },
     ],
   },
   {

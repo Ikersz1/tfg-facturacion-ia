@@ -21,7 +21,7 @@ Tras guardar, vuelve a desplegar (**Redeploy**) para que el build las inyecte.
 - **Login del panel:** `/login` y **registro** `/register`. Crea usuarios desde la app o manualmente en **Authentication → Users**.
 - **Sin confirmar email al registrarse:** en el panel de Supabase ve a **Authentication → Providers → Email** y desactiva **Confirm email** (a veces aparece como desactivar confirmaciones por correo). Así `signUp` devuelve sesión al momento y la app te manda al panel sin abrir el mail.
 - En **Authentication → URL Configuration**, añade la URL de tu app en Vercel en **Site URL** (p. ej. `https://tu-proyecto.vercel.app`) y en **Redirect URLs** si hace falta (`http://localhost:3000/**` para desarrollo).
-- **Datos por usuario:** primero crea las tablas si el proyecto está vacío: ejecuta `supabase/migrations/20250101000000_initial_schema.sql`. Después aplica `20260513140000_tenant_user_id_rls.sql` (columna `user_id` + RLS). Si ya tenías tablas creadas a mano, **no** hace falta el `initial_schema`. El archivo `20260402120000_invoice_status_partial.sql` solo ajusta el CHECK de `status` si venías de un esquema sin estado `partial`.
+- **Datos por usuario:** primero crea las tablas si el proyecto está vacío: ejecuta `supabase/migrations/20250101000000_initial_schema.sql`. Después aplica `20260513140000_tenant_user_id_rls.sql` (columna `user_id` + RLS). Si ya tenías tablas creadas a mano, **no** hace falta el `initial_schema`. El archivo `20260402120000_invoice_status_partial.sql` solo ajusta el CHECK de `status` si venías de un esquema sin estado `partial`. Para **producto vs servicio** en catálogo: `20260514120000_products_catalog_kind.sql` (o columna `kind` ya incluida si recreaste el esquema inicial nuevo).
 
 ## 4. Comprobar en local
 

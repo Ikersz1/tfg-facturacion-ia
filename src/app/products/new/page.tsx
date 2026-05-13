@@ -1,17 +1,11 @@
-import { ProductForm } from "@/components/product-form";
-import { PageHeader } from "@/components/page-header";
+import { redirect } from "next/navigation";
 
-export default function NewProductPage() {
-  return (
-    <div className="flex w-full flex-1 flex-col">
-      <PageHeader
-        back={{ href: "/products", label: "← Productos" }}
-        eyebrow="Facturación"
-        title="Nuevo producto / servicio"
-      />
-      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-8 sm:px-6">
-        <ProductForm />
-      </div>
-    </div>
-  );
+type PageProps = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function ProductsNewRedirect({ searchParams }: PageProps) {
+  const sp = await searchParams;
+  const k = typeof sp.kind === "string" && sp.kind === "service" ? "service" : "product";
+  redirect(`/catalogo/new?kind=${k}`);
 }

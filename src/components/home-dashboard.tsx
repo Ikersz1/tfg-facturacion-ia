@@ -212,7 +212,7 @@ export function HomeDashboard({ data }: { data: DashboardData }) {
               </li>
               <li>
                 <Link
-                  href="/products/new"
+                  href="/catalogo/new"
                   className="flex min-h-11 items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-900 transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-50 dark:hover:border-zinc-500 dark:hover:bg-zinc-800"
                 >
                   <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
@@ -222,7 +222,7 @@ export function HomeDashboard({ data }: { data: DashboardData }) {
                       d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z"
                     />
                   </svg>
-                  Nuevo producto
+                  Nuevo en catálogo
                 </Link>
               </li>
             </ul>
