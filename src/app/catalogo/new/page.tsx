@@ -17,7 +17,7 @@ export default async function CatalogoNewPage({ searchParams }: PageProps) {
   return (
     <div className="flex w-full flex-1 flex-col">
       <PageHeader
-        back={{ href: `/catalogo?kind=${kind}`, label: "← Catálogo" }}
+        back={{ href: `/catalogo?kind=${kind}`, ariaLabel: "Volver al catálogo" }}
         eyebrow="Catálogo"
         title={`Nuevo ${label.toLowerCase()}`}
         description="Completa los campos y vuelve al listado."

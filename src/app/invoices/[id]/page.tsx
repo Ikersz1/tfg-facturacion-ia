@@ -82,7 +82,7 @@ export default async function InvoiceDetailPage(props: PageProps) {
   return (
     <div className="flex w-full flex-1 flex-col">
       <PageHeader
-        back={{ href: "/invoices", label: "← Facturas" }}
+        back={{ href: "/invoices", ariaLabel: "Volver a facturas" }}
         eyebrow={numLabel}
         eyebrowTone="muted"
         title="Factura"

@@ -62,7 +62,7 @@ export default async function ClientDetailPage({ params }: PageProps) {
   return (
     <div className="flex w-full flex-1 flex-col">
       <PageHeader
-        back={{ href: "/clients", label: "← Clientes" }}
+        back={{ href: "/clients", ariaLabel: "Volver a clientes" }}
         eyebrow="Facturación"
         title={client.name}
         description={client.tax_id ?? undefined}

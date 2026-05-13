@@ -28,7 +28,7 @@ export default async function NewInvoicePage({ searchParams }: PageProps) {
   return (
     <div className="flex w-full flex-1 flex-col">
       <PageHeader
-        back={{ href: "/invoices", label: "← Facturas" }}
+        back={{ href: "/invoices", ariaLabel: "Volver a facturas" }}
         eyebrow="Facturación"
         title="Nueva factura"
         description="Se creará un borrador que podrás editar y numerar al emitir."

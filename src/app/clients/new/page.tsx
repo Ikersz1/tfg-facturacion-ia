@@ -5,7 +5,7 @@ export default function NewClientPage() {
   return (
     <div className="flex w-full flex-1 flex-col">
       <PageHeader
-        back={{ href: "/clients", label: "← Clientes" }}
+        back={{ href: "/clients", ariaLabel: "Volver a clientes" }}
         eyebrow="Facturación"
         title="Nuevo cliente"
       />
