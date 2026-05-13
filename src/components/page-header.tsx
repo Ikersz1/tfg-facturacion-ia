@@ -35,20 +35,24 @@ export function PageHeader({
 
   return (
     <header
-      className={`w-full border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 ${className}`}
+      className={`relative w-full max-w-full overflow-x-hidden border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 ${className}`}
     >
-      <div className={`mx-auto ${HEADER_MAX} px-4 sm:px-6`}>
-        {back ? (
-          <div className="flex justify-start pt-4 sm:pt-5 -ml-5 sm:-ml-6">
+      {back ? (
+        <div className="pointer-events-none absolute left-0 top-4 z-10 pl-1.5 sm:top-5 sm:pl-2">
+          <div className="pointer-events-auto">
             <PageBackButton href={back.href} ariaLabel={back.ariaLabel} />
           </div>
-        ) : null}
+        </div>
+      ) : null}
 
-        <div
-          className={`flex items-start justify-between gap-4 ${
-            back ? "pb-5 pt-4 sm:pb-6" : "py-4 sm:py-5"
-          }`}
-        >
+      <div
+        className={`mx-auto w-full min-w-0 ${HEADER_MAX} py-4 sm:py-5 ${
+          back
+            ? "pl-[2.875rem] pr-4 sm:pl-[3.25rem] sm:pr-6 min-[1120px]:px-6"
+            : "px-4 sm:px-6"
+        }`}
+      >
+        <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <div className="space-y-1.5">
               {eyebrow ? <p className={eyebrowClass}>{eyebrow}</p> : null}
