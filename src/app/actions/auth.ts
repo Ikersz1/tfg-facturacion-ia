@@ -26,19 +26,13 @@ export async function registerAction(
     return { error: "La contraseña debe tener al menos 6 caracteres." };
   }
 
-  const emailCheck = await validateRegistrationEmail(email);
+  const emailCheck = validateRegistrationEmail(email);
   if (!emailCheck.ok) {
     if (emailCheck.reason === "format") {
       return { error: "Introduce un email con formato válido." };
     }
-    if (emailCheck.reason === "disposable") {
-      return {
-        error: "No se permiten correos temporales. Usa un email personal o de trabajo.",
-      };
-    }
     return {
-      error:
-        "Ese dominio no existe o no está configurado para recibir correo. Revisa el email (p. ej. el dominio tras @).",
+      error: "No se permiten correos temporales. Usa un email personal o de trabajo.",
     };
   }
 
@@ -54,7 +48,21 @@ export async function registerAction(
     ) {
       return { error: "Ya existe una cuenta con este email. Inicia sesión." };
     }
-    return { error: "No se pudo crear la cuenta. Inténtalo de nuevo." };
+    if (msg.includes("rate limit") || msg.includes("too many")) {
+      return { error: "Demasiados intentos. Espera un minuto e inténtalo de nuevo." };
+    }
+    if (msg.includes("signup") && msg.includes("not allowed")) {
+      return { error: "El registro está desactivado en el proyecto (Supabase)." };
+    }
+    if (msg.includes("invalid") && msg.includes("email")) {
+      return {
+        error:
+          "El servicio de autenticación no acepta ese correo. Revisa la ortografía o la configuración de dominios en Supabase.",
+      };
+    }
+    return {
+      error: `No se pudo crear la cuenta: ${error.message}`,
+    };
   }
 
   if (data.session) {
