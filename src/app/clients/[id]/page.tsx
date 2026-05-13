@@ -67,7 +67,7 @@ export default async function ClientDetailPage({ params }: PageProps) {
         title={client.name}
         description={client.tax_id ?? undefined}
       />
-      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 px-4 py-8 sm:px-6">
+      <div className="mr-auto ml-0 flex w-full max-w-5xl flex-1 flex-col gap-8 px-4 py-8 sm:px-6">
       <div className="flex flex-wrap gap-2">
         <Link
           href={invoicesLink}

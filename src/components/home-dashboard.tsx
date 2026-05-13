@@ -60,7 +60,7 @@ function RevenueChart({ months }: { months: MonthlyIncome[] }) {
 
 export function HomeDashboard({ data }: { data: DashboardData }) {
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-4 py-8 sm:px-6 sm:py-10">
+    <div className="mr-auto ml-0 flex w-full max-w-6xl flex-1 flex-col gap-8 px-4 py-8 sm:px-6 sm:py-10">
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           value={formatMoneyEUR(data.billedThisMonth)}

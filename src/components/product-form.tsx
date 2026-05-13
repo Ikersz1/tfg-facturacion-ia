@@ -29,7 +29,7 @@ export function ProductForm({ defaultKind = "product", lockKind = true }: Props)
   return (
     <form
       action={formAction}
-      className="mx-auto flex w-full max-w-lg flex-col gap-4 rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900"
+      className="flex w-full max-w-lg flex-col gap-4 rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900"
     >
       {state?.error ? (
         <p

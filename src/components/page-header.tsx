@@ -49,7 +49,7 @@ export function PageHeader({
       ) : null}
 
       <div
-        className={`mx-auto flex w-full min-w-0 ${HEADER_MAX} items-start gap-2 px-4 py-4 sm:gap-3 sm:px-6 sm:py-5`}
+        className={`mr-auto ml-0 flex w-full min-w-0 ${HEADER_MAX} items-start gap-2 px-4 py-4 sm:gap-3 sm:px-6 sm:py-5`}
       >
         {/* Hueco fijo: títulos alineados con o sin flecha; la flecha va en absolute al borde */}
         <div className={BACK_SLOT_CLASS} aria-hidden />
