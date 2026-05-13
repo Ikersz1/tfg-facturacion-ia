@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { validateRegistrationEmail } from "@/lib/validate-registration-email";
 import { redirect } from "next/navigation";
 
 export type AuthState = { error?: string };
@@ -25,6 +26,22 @@ export async function registerAction(
     return { error: "La contraseña debe tener al menos 6 caracteres." };
   }
 
+  const emailCheck = await validateRegistrationEmail(email);
+  if (!emailCheck.ok) {
+    if (emailCheck.reason === "format") {
+      return { error: "Introduce un email con formato válido." };
+    }
+    if (emailCheck.reason === "disposable") {
+      return {
+        error: "No se permiten correos temporales. Usa un email personal o de trabajo.",
+      };
+    }
+    return {
+      error:
+        "Ese dominio no existe o no está configurado para recibir correo. Revisa el email (p. ej. el dominio tras @).",
+    };
+  }
+
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({ email, password });
 
@@ -46,7 +63,7 @@ export async function registerAction(
 
   return {
     success:
-      "Cuenta creada. Si tu proyecto exige confirmar el email, revisa la bandeja de entrada (y spam) para activar la cuenta.",
+      "Cuenta creada. Revisa tu correo (incluido spam) para activarla antes de iniciar sesión.",
   };
 }
 

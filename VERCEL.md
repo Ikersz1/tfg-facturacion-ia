@@ -19,6 +19,7 @@ Tras guardar, vuelve a desplegar (**Redeploy**) para que el build las inyecte.
 ## 3. Supabase
 
 - **Login del panel:** `/login` y **registro** `/register`. Crea usuarios desde la app o manualmente en **Authentication → Users**.
+- **Sin confirmar email al registrarse:** en el panel de Supabase ve a **Authentication → Providers → Email** y desactiva **Confirm email** (a veces aparece como desactivar confirmaciones por correo). Así `signUp` devuelve sesión al momento y la app te manda al panel sin abrir el mail.
 - En **Authentication → URL Configuration**, añade la URL de tu app en Vercel en **Site URL** (p. ej. `https://tu-proyecto.vercel.app`) y en **Redirect URLs** si hace falta (`http://localhost:3000/**` para desarrollo).
 - Las migraciones en `supabase/migrations/` deben estar aplicadas en el proyecto remoto (SQL editor o CLI).
 
