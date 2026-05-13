@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ThemeCookieSync } from "@/components/theme-cookie-sync";
 import "./globals.css";
@@ -29,6 +29,10 @@ export default async function RootLayout({
   const theme = cookieStore.get("tfg-theme")?.value;
   const isDark = theme === "dark";
 
+  const headersList = await headers();
+  const pathname = headersList.get("x-pathname") ?? "";
+  const isLoginPage = pathname === "/login";
+
   return (
     <html
       lang="es"
@@ -37,8 +41,10 @@ export default async function RootLayout({
     >
       <body className="flex min-h-full flex-col bg-background text-zinc-900 dark:text-zinc-100">
         <ThemeCookieSync />
-        <AppSidebar />
-        <div className="flex min-h-screen flex-1 flex-col pt-14 md:pt-0 md:pl-64">
+        {isLoginPage ? null : <AppSidebar />}
+        <div
+          className={`flex min-h-screen flex-1 flex-col${isLoginPage ? "" : " pt-14 md:pt-0 md:pl-64"}`}
+        >
           {children}
         </div>
       </body>

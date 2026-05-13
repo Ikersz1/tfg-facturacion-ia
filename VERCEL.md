@@ -18,7 +18,8 @@ Tras guardar, vuelve a desplegar (**Redeploy**) para que el build las inyecte.
 
 ## 3. Supabase
 
-- En **Authentication → URL Configuration** (si usas auth más adelante), añade la URL de producción de Vercel.
+- **Login del panel:** crea al menos un usuario en **Authentication → Users** (email + contraseña). La app redirige a `/login` si no hay sesión.
+- En **Authentication → URL Configuration**, añade la URL de tu app en Vercel en **Site URL** (p. ej. `https://tu-proyecto.vercel.app`) y en **Redirect URLs** si hace falta (`http://localhost:3000/**` para desarrollo).
 - Las migraciones en `supabase/migrations/` deben estar aplicadas en el proyecto remoto (SQL editor o CLI).
 
 ## 4. Comprobar en local
