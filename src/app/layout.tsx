@@ -31,7 +31,7 @@ export default async function RootLayout({
 
   const headersList = await headers();
   const pathname = headersList.get("x-pathname") ?? "";
-  const isLoginPage = pathname === "/login";
+  const isAuthPage = pathname === "/login" || pathname === "/register";
 
   return (
     <html
@@ -41,9 +41,9 @@ export default async function RootLayout({
     >
       <body className="flex min-h-full flex-col bg-background text-zinc-900 dark:text-zinc-100">
         <ThemeCookieSync />
-        {isLoginPage ? null : <AppSidebar />}
+        {isAuthPage ? null : <AppSidebar />}
         <div
-          className={`flex min-h-screen flex-1 flex-col${isLoginPage ? "" : " pt-14 md:pt-0 md:pl-64"}`}
+          className={`flex min-h-screen flex-1 flex-col${isAuthPage ? "" : " pt-14 md:pt-0 md:pl-64"}`}
         >
           {children}
         </div>

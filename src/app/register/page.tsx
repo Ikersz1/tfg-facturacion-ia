@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
-import { loginAction, type AuthState } from "@/app/actions/auth";
+import { registerAction, type RegisterState } from "@/app/actions/auth";
 
-const initial: AuthState = {};
+const initial: RegisterState = {};
 
-export default function LoginPage() {
-  const [state, formAction, pending] = useActionState(loginAction, initial);
+export default function RegisterPage() {
+  const [state, formAction, pending] = useActionState(registerAction, initial);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-4 dark:bg-zinc-950">
@@ -29,10 +29,10 @@ export default function LoginPage() {
             </svg>
           </div>
           <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-            Facturación IA
+            Crear cuenta
           </h1>
           <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-            Inicia sesión para acceder al panel
+            Regístrate para acceder al panel
           </p>
         </div>
 
@@ -46,6 +46,15 @@ export default function LoginPage() {
               className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/50 dark:text-red-200"
             >
               {state.error}
+            </p>
+          ) : null}
+
+          {state?.success ? (
+            <p
+              role="status"
+              className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100"
+            >
+              {state.success}
             </p>
           ) : null}
 
@@ -67,7 +76,21 @@ export default function LoginPage() {
               name="password"
               type="password"
               required
-              autoComplete="current-password"
+              minLength={6}
+              autoComplete="new-password"
+              placeholder="Mínimo 6 caracteres"
+              className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 outline-none transition focus:ring-2 focus:ring-brand/40 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder:text-zinc-500"
+            />
+          </label>
+
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium text-zinc-700 dark:text-zinc-300">Repetir contraseña</span>
+            <input
+              name="confirmPassword"
+              type="password"
+              required
+              minLength={6}
+              autoComplete="new-password"
               placeholder="••••••••"
               className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 outline-none transition focus:ring-2 focus:ring-brand/40 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder:text-zinc-500"
             />
@@ -78,16 +101,16 @@ export default function LoginPage() {
             disabled={pending}
             className="mt-1 inline-flex h-10 items-center justify-center rounded-lg bg-brand px-4 text-sm font-medium text-brand-fg transition hover:bg-brand-hover disabled:opacity-60"
           >
-            {pending ? "Entrando…" : "Iniciar sesión"}
+            {pending ? "Creando cuenta…" : "Registrarse"}
           </button>
 
           <p className="text-center text-sm text-zinc-500 dark:text-zinc-400">
-            ¿No tienes cuenta?{" "}
+            ¿Ya tienes cuenta?{" "}
             <Link
-              href="/register"
+              href="/login"
               className="font-medium text-brand hover:underline dark:text-brand"
             >
-              Registrarse
+              Iniciar sesión
             </Link>
           </p>
         </form>
