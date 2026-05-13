@@ -39,7 +39,7 @@ export function PageHeader({
     >
       <div className={`mx-auto ${HEADER_MAX} px-4 sm:px-6`}>
         {back ? (
-          <div className="flex justify-start pt-4 sm:pt-5 -ml-2.5 sm:-ml-3">
+          <div className="flex justify-start pt-4 sm:pt-5 -ml-5 sm:-ml-6">
             <PageBackButton href={back.href} ariaLabel={back.ariaLabel} />
           </div>
         ) : null}

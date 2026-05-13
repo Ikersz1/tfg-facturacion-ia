@@ -20,17 +20,21 @@ export function PageBackButton({
     <Link
       href={href}
       aria-label={ariaLabel}
-      className={`inline-flex size-10 shrink-0 items-center justify-center rounded-md text-zinc-600 outline-none ring-zinc-400/40 transition hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 ${className}`}
+      className={`inline-flex h-10 min-w-10 shrink-0 items-center justify-center rounded-md px-1 text-accent outline-none ring-accent/30 transition hover:bg-brand-soft hover:text-accent-hover focus-visible:ring-2 dark:hover:bg-zinc-800 dark:hover:text-accent-hover ${className}`}
     >
       <svg
-        className="size-5"
+        className="h-5 w-7"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
         strokeWidth={2}
         aria-hidden
       >
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
+        />
       </svg>
     </Link>
   );
