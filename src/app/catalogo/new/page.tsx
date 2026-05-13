@@ -1,6 +1,5 @@
 import { ProductForm } from "@/components/product-form";
 import { PageHeader } from "@/components/page-header";
-import { CatalogKindTabs } from "@/components/catalog-kind-tabs";
 import { catalogKindLabel, parseCatalogKind, type CatalogKind } from "@/lib/catalog-kind";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +18,7 @@ export default async function CatalogoNewPage({ searchParams }: PageProps) {
     <div className="flex w-full flex-1 flex-col">
       <PageHeader
         back={{ href: `/catalogo?kind=${kind}`, label: "← Catálogo" }}
-        eyebrow="Gestión"
+        eyebrow="Gestión · Catálogo"
         title={`Nuevo ${label.toLowerCase()}`}
         description={
           kind === "service"
@@ -27,10 +26,9 @@ export default async function CatalogoNewPage({ searchParams }: PageProps) {
             : "Artículos físicos o digitales con precio e IVA."
         }
       />
-      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6">
-        <CatalogKindTabs activeKind={kind} />
+      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-8 sm:px-6">
         <div className="mx-auto w-full max-w-lg">
-          <ProductForm key={kind} defaultKind={kind} />
+          <ProductForm key={kind} defaultKind={kind} lockKind />
         </div>
       </div>
     </div>
