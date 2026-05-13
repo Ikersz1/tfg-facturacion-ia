@@ -28,11 +28,7 @@ export default async function CatalogoPage({ searchParams }: PageProps) {
 
   return (
     <div className="flex w-full flex-1 flex-col">
-      <PageHeader
-        eyebrow="Gestión"
-        title="Catálogo"
-        description="Productos y servicios; elige la pestaña y crea ítems para las facturas."
-      />
+      <PageHeader eyebrow="Gestión" title="Catálogo" />
       <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <CatalogKindTabs activeKind={kind} />
