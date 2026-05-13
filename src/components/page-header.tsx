@@ -3,7 +3,7 @@ import { PageBackButton } from "@/components/page-back-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const HEADER_MAX = "max-w-5xl";
-/** Misma anchura que `PageBackButton` (min-w-10 + px) para alinear títulos con o sin flecha */
+/** Hueco fijo (misma anchura que el botón atrás) para que título y eyebrow queden alineados con o sin flecha */
 const BACK_SLOT_CLASS =
   "flex w-11 shrink-0 justify-start self-start pt-0.5";
 
@@ -38,16 +38,21 @@ export function PageHeader({
 
   return (
     <header
-      className={`w-full max-w-full overflow-x-hidden border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 ${className}`}
+      className={`relative w-full max-w-full overflow-x-hidden border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 ${className}`}
     >
+      {back ? (
+        <div className="pointer-events-none absolute left-0 top-4 z-10 pl-1.5 sm:top-5 sm:pl-2">
+          <div className="pointer-events-auto">
+            <PageBackButton href={back.href} ariaLabel={back.ariaLabel} />
+          </div>
+        </div>
+      ) : null}
+
       <div
         className={`mx-auto flex w-full min-w-0 ${HEADER_MAX} items-start gap-2 px-4 py-4 sm:gap-3 sm:px-6 sm:py-5`}
       >
-        <div className={BACK_SLOT_CLASS} aria-hidden={!back}>
-          {back ? (
-            <PageBackButton href={back.href} ariaLabel={back.ariaLabel} />
-          ) : null}
-        </div>
+        {/* Hueco fijo: títulos alineados con o sin flecha; la flecha va en absolute al borde */}
+        <div className={BACK_SLOT_CLASS} aria-hidden />
 
         <div className="flex min-w-0 flex-1 items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
