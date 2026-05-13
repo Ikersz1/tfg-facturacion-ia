@@ -55,7 +55,7 @@ export function PageHeader({
         <div className={BACK_SLOT_CLASS} aria-hidden />
 
         <div className="flex min-w-0 flex-1 items-start justify-between gap-4">
-          <div className="min-w-0 flex-1 -translate-x-2 sm:-translate-x-2.5">
+          <div className="min-w-0 flex-1 -translate-x-2 sm:-translate-x-5">
             <div className="space-y-1.5">
               {eyebrow ? <p className={eyebrowClass}>{eyebrow}</p> : null}
               <h1 className={titleClass}>{title}</h1>
