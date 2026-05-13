@@ -3,7 +3,7 @@ import { InvoiceDetailForm } from "@/components/invoice-detail-form";
 import { PageHeader } from "@/components/page-header";
 import { effectiveInvoiceStatus } from "@/lib/invoice-status";
 import { roundCurrencyEUR } from "@/lib/money";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +23,7 @@ type PageProps = { params: Promise<{ id: string }> };
 
 export default async function InvoiceDetailPage(props: PageProps) {
   const { id } = await props.params;
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   const { data: invoice, error: invErr } = await supabase
     .from("invoices")

@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { effectiveInvoiceStatus } from "@/lib/invoice-status";
 import { buildInvoicesListUrl } from "@/lib/invoice-list-url";
 import { formatMoneyEUR, roundCurrencyEUR } from "@/lib/money";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +24,7 @@ type PageProps = { params: Promise<{ id: string }> };
 
 export default async function ClientDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   const { data: client, error: cErr } = await supabase
     .from("clients")

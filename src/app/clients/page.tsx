@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 export default async function ClientsPage() {
-  const supabase = createAdminClient();
+  const supabase = await createClient();
   const { data: clients, error } = await supabase
     .from("clients")
     .select(

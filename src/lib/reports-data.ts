@@ -5,7 +5,7 @@ import { formatYMD } from "@/lib/invoice-list-url";
 import { roundCurrencyEUR } from "@/lib/money";
 import { rangeLast12Months, rangeThisMonth, rangeThisWeek } from "@/lib/informes-range-presets";
 import type { ReportsResolvedFilters } from "@/lib/reports-query";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 export type { ReportsResolvedFilters } from "@/lib/reports-query";
 export { buildReportsQueryString } from "@/lib/reports-query";
@@ -181,7 +181,7 @@ export async function getReportsData(sp: Record<string, string | string[] | unde
   const filters = resolveReportsFilters(sp);
   const { from, to, clientId, granularity } = filters;
 
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   const [invRes, payRes, linesRes, clientsRes, productsRes] = await Promise.all([
     supabase
@@ -605,7 +605,7 @@ export async function getInvoiceExportRows(
   const filters = resolveReportsFilters(sp);
   const { from, to, clientId } = filters;
 
-  const supabase = createAdminClient();
+  const supabase = await createClient();
   const { data: invoices } = await supabase
     .from("invoices")
     .select("id, client_id, total, status, issue_date, due_date, series, year, number, clients ( name )");

@@ -1,6 +1,7 @@
 "use server";
 
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
+import { requireAuthUserId } from "@/lib/supabase/require-auth-user";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -32,8 +33,12 @@ export async function createProductAction(
     return { error: "El IVA debe estar entre 0 y 100." };
   }
 
-  const supabase = createAdminClient();
+  const supabase = await createClient();
+  const auth = await requireAuthUserId(supabase);
+  if ("error" in auth) return { error: auth.error };
+
   const { error } = await supabase.from("products").insert({
+    user_id: auth.userId,
     name,
     description: emptyToNull(formData.get("description")),
     sku: emptyToNull(formData.get("sku")),

@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/page-header";
 import { effectiveInvoiceStatus } from "@/lib/invoice-status";
 import { parseInvoiceListSearch } from "@/lib/invoice-list-url";
 import { formatMoneyEUR, roundCurrencyEUR } from "@/lib/money";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +29,7 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
   const sp = await searchParams;
   const filters = parseInvoiceListSearch(sp);
 
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   const { data: clients } = await supabase
     .from("clients")

@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { formatMoneyEUR } from "@/lib/money";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 export default async function ProductsPage() {
-  const supabase = createAdminClient();
+  const supabase = await createClient();
   const { data: products, error } = await supabase
     .from("products")
     .select(

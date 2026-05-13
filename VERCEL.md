@@ -12,7 +12,7 @@ En el proyecto Vercel: **Settings → Environment Variables**, añade las mismas
 |----------|---------|--------|
 | `NEXT_PUBLIC_SUPABASE_URL` | Production, Preview, Development | URL del proyecto en Supabase |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Igual | Clave `anon` `public` |
-| `SUPABASE_SERVICE_ROLE_KEY` | Production (y Preview si hace falta) | **Secreta**, solo servidor; no uses prefijo `NEXT_PUBLIC_` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Opcional | Solo para scripts con rol de servicio; **el panel no la usa** (datos con RLS + sesión). |
 
 Tras guardar, vuelve a desplegar (**Redeploy**) para que el build las inyecte.
 
@@ -21,7 +21,7 @@ Tras guardar, vuelve a desplegar (**Redeploy**) para que el build las inyecte.
 - **Login del panel:** `/login` y **registro** `/register`. Crea usuarios desde la app o manualmente en **Authentication → Users**.
 - **Sin confirmar email al registrarse:** en el panel de Supabase ve a **Authentication → Providers → Email** y desactiva **Confirm email** (a veces aparece como desactivar confirmaciones por correo). Así `signUp` devuelve sesión al momento y la app te manda al panel sin abrir el mail.
 - En **Authentication → URL Configuration**, añade la URL de tu app en Vercel en **Site URL** (p. ej. `https://tu-proyecto.vercel.app`) y en **Redirect URLs** si hace falta (`http://localhost:3000/**` para desarrollo).
-- Las migraciones en `supabase/migrations/` deben estar aplicadas en el proyecto remoto (SQL editor o CLI).
+- **Datos por usuario:** primero crea las tablas si el proyecto está vacío: ejecuta `supabase/migrations/20250101000000_initial_schema.sql`. Después aplica `20260513140000_tenant_user_id_rls.sql` (columna `user_id` + RLS). Si ya tenías tablas creadas a mano, **no** hace falta el `initial_schema`. El archivo `20260402120000_invoice_status_partial.sql` solo ajusta el CHECK de `status` si venías de un esquema sin estado `partial`.
 
 ## 4. Comprobar en local
 

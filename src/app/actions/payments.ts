@@ -1,6 +1,6 @@
 "use server";
 
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { roundCurrencyEUR } from "@/lib/money";
 import { revalidatePath } from "next/cache";
 
@@ -18,7 +18,7 @@ export async function addPaymentAction(
     return { error: "Importe no válido." };
   }
 
-  const supabase = createAdminClient();
+  const supabase = await createClient();
   const { data: inv, error: invErr } = await supabase
     .from("invoices")
     .select("id, status, total")

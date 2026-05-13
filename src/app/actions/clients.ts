@@ -1,6 +1,7 @@
 "use server";
 
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
+import { requireAuthUserId } from "@/lib/supabase/require-auth-user";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -15,8 +16,12 @@ export async function createClientAction(
     return { error: "El nombre es obligatorio." };
   }
 
-  const supabase = createAdminClient();
+  const supabase = await createClient();
+  const auth = await requireAuthUserId(supabase);
+  if ("error" in auth) return { error: auth.error };
+
   const { error } = await supabase.from("clients").insert({
+    user_id: auth.userId,
     name,
     tax_id: emptyToNull(formData.get("tax_id")),
     email: emptyToNull(formData.get("email")),

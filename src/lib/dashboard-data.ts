@@ -2,7 +2,7 @@ import "server-only";
 
 import { effectiveInvoiceStatus } from "@/lib/invoice-status";
 import { roundCurrencyEUR } from "@/lib/money";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 export type MonthlyIncome = { key: string; label: string; amount: number };
 
@@ -39,7 +39,7 @@ function parseIssueMonth(issueDate: string | null): string | null {
 }
 
 export async function getDashboardData(): Promise<DashboardData> {
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   const { data: invoices, error: invErr } = await supabase
     .from("invoices")

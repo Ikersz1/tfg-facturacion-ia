@@ -1,7 +1,9 @@
 "use server";
 
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
+import { requireAuthUserId } from "@/lib/supabase/require-auth-user";
 import { lineAmounts, roundCurrencyEUR } from "@/lib/money";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -23,10 +25,14 @@ export async function createDraftInvoiceAction(
     return { error: "Año no válido." };
   }
 
-  const supabase = createAdminClient();
+  const supabase = await createClient();
+  const auth = await requireAuthUserId(supabase);
+  if ("error" in auth) return { error: auth.error };
+
   const { data, error } = await supabase
     .from("invoices")
     .insert({
+      user_id: auth.userId,
       client_id: clientId,
       series,
       year,
@@ -65,7 +71,7 @@ export async function addInvoiceLineAction(
   const tax = taxRaw ? Number(taxRaw.replace(",", ".")) : 21;
   if (Number.isNaN(tax) || tax < 0 || tax > 100) return { error: "IVA no válido." };
 
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   const { data: inv, error: invErr } = await supabase
     .from("invoices")
@@ -116,7 +122,7 @@ export async function deleteInvoiceLineAction(
   const invoiceId = formData.get("invoice_id")?.toString();
   if (!lineId || !invoiceId) return { error: "Datos incompletos." };
 
-  const supabase = createAdminClient();
+  const supabase = await createClient();
   const { data: inv } = await supabase
     .from("invoices")
     .select("status")
@@ -142,7 +148,7 @@ export async function issueInvoiceAction(
   const invoiceId = formData.get("invoice_id")?.toString();
   if (!invoiceId) return { error: "Falta factura." };
 
-  const supabase = createAdminClient();
+  const supabase = await createClient();
 
   const { data: invoice, error: invErr } = await supabase
     .from("invoices")
@@ -215,10 +221,7 @@ export async function issueInvoiceAction(
   return { ok: true };
 }
 
-async function recalculateInvoiceTotals(
-  supabase: ReturnType<typeof createAdminClient>,
-  invoiceId: string,
-) {
+async function recalculateInvoiceTotals(supabase: SupabaseClient, invoiceId: string) {
   const { data: lines, error } = await supabase
     .from("invoice_lines")
     .select("line_net, line_tax, line_total")

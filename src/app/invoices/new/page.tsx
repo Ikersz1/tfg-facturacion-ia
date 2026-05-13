@@ -1,6 +1,6 @@
 import { NewInvoiceForm } from "@/components/new-invoice-form";
 import { PageHeader } from "@/components/page-header";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +13,7 @@ export default async function NewInvoicePage({ searchParams }: PageProps) {
   const clientIdParam =
     typeof sp.client_id === "string" ? sp.client_id : undefined;
 
-  const supabase = createAdminClient();
+  const supabase = await createClient();
   const { data: clients } = await supabase
     .from("clients")
     .select("id, name")
