@@ -33,7 +33,7 @@ export default async function NewInvoicePage({ searchParams }: PageProps) {
         title="Nueva factura"
         description="Se creará un borrador que podrás editar y numerar al emitir."
       />
-      <div className="mr-auto ml-0 flex w-full max-w-5xl flex-1 flex-col px-4 py-8 sm:px-6">
+      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-8 sm:px-6">
         <NewInvoiceForm
           clients={clients ?? []}
           defaultClientId={defaultClientId}

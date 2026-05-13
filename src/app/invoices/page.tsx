@@ -123,7 +123,7 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
   return (
     <div className="flex w-full flex-1 flex-col">
       <PageHeader eyebrow="Gestión" title="Facturas" />
-      <div className="mr-auto ml-0 flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
+      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
       <Suspense
         fallback={
           <div

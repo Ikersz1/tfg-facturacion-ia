@@ -49,13 +49,13 @@ export function PageHeader({
       ) : null}
 
       <div
-        className={`mr-auto ml-0 flex w-full min-w-0 ${HEADER_MAX} items-start gap-2 px-4 py-4 sm:gap-3 sm:px-6 sm:py-5`}
+        className={`mx-auto flex w-full min-w-0 ${HEADER_MAX} items-start gap-2 px-4 py-4 sm:gap-3 sm:px-6 sm:py-5`}
       >
         {/* Hueco fijo: títulos alineados con o sin flecha; la flecha va en absolute al borde */}
         <div className={BACK_SLOT_CLASS} aria-hidden />
 
         <div className="flex min-w-0 flex-1 items-start justify-between gap-4">
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 -translate-x-1 sm:-translate-x-1.5">
             <div className="space-y-1.5">
               {eyebrow ? <p className={eyebrowClass}>{eyebrow}</p> : null}
               <h1 className={titleClass}>{title}</h1>

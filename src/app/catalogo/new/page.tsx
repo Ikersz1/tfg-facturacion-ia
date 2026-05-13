@@ -22,8 +22,8 @@ export default async function CatalogoNewPage({ searchParams }: PageProps) {
         title={`Nuevo ${label.toLowerCase()}`}
         description="Completa los campos y vuelve al listado."
       />
-      <div className="mr-auto ml-0 flex w-full max-w-5xl flex-1 flex-col px-4 py-8 sm:px-6">
-        <div className="mr-auto ml-0 w-full max-w-lg">
+      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-8 sm:px-6">
+        <div className="mx-auto w-full max-w-lg">
           <ProductForm key={kind} defaultKind={kind} lockKind />
         </div>
       </div>

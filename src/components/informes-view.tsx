@@ -41,7 +41,7 @@ export function InformesView({ data }: { data: ReportsData }) {
   };
 
   return (
-    <div className="mr-auto ml-0 flex w-full max-w-6xl flex-1 flex-col gap-8 px-4 py-6 sm:px-6 sm:py-8">
+    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-4 py-6 sm:px-6 sm:py-8">
       <section className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <InformesRangeHeading filters={filters} />
         <InformesRangeToolbar filters={filters} />

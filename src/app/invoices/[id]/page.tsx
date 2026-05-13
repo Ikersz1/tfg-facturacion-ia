@@ -93,7 +93,7 @@ export default async function InvoiceDetailPage(props: PageProps) {
           </>
         }
       />
-      <div className="mr-auto ml-0 flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
+      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
       <p className="text-sm text-zinc-600 dark:text-zinc-400">
         Estado:{" "}
         <span className="inline-flex rounded-full bg-zinc-200 px-2.5 py-0.5 text-xs font-medium text-zinc-800 dark:bg-zinc-700 dark:text-zinc-100">
