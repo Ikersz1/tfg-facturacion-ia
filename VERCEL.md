@@ -12,9 +12,8 @@ En el proyecto Vercel: **Settings → Environment Variables**, añade las mismas
 |----------|---------|--------|
 | `NEXT_PUBLIC_SUPABASE_URL` | Production, Preview, Development | URL del proyecto en Supabase |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Igual | Clave `anon` `public` |
-| `SUPABASE_SERVICE_ROLE_KEY` | Opcional en el panel; **sí en webhook** | Sin ella, `POST /api/verifacti/webhook` no puede actualizar facturas. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Opcional | Solo para scripts con rol de servicio; **el panel no la usa** (datos con RLS + sesión). |
 | `VERIFACTI_NIF_API_KEY` | Opcional | Clave NIF Verifacti (`vf_test_…` / `vf_prod_…`). |
-| `VERIFACTI_WEBHOOK_SECRET` | Opcional | Misma cadena que el query `?token=` (o cabecera `X-Verifacti-Webhook-Secret`) en la URL del webhook en Verifacti. Si no la pones, el webhook acepta cualquier POST (solo para pruebas locales). |
 
 Tras guardar, vuelve a desplegar (**Redeploy**) para que el build las inyecte.
 

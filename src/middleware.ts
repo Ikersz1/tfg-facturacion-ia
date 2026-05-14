@@ -40,10 +40,7 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isPublic =
-    PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`)) ||
-    pathname === "/api/verifacti/webhook" ||
-    pathname.startsWith("/api/verifacti/webhook/");
+  const isPublic = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
   if (!user && !isPublic) {
     const loginUrl = request.nextUrl.clone();

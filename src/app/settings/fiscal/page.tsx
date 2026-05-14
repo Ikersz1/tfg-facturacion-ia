@@ -30,22 +30,8 @@ export default async function FiscalSettingsPage() {
         <p className="max-w-lg text-sm text-zinc-600 dark:text-zinc-400">
           Si defines <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">VERIFACTI_NIF_API_KEY</code>{" "}
           en el servidor (clave <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">vf_test_…</code> de
-          Verifacti), al emitir una factura se enviará el registro a Verifacti. El cliente debe tener NIF/CIF.
-        </p>
-        <p className="max-w-lg text-sm text-zinc-600 dark:text-zinc-400">
-          <strong className="font-medium text-zinc-800 dark:text-zinc-200">Webhook (opcional):</strong> endpoint{" "}
-          <code className="rounded bg-zinc-100 px-1 text-xs dark:bg-zinc-800">
-            POST /api/verifacti/webhook
-          </code>
-          . URL ejemplo:{" "}
-          <code className="break-all rounded bg-zinc-100 px-1 text-xs dark:bg-zinc-800">
-            https://TU-PROYECTO.vercel.app/api/verifacti/webhook?token=TU_SECRETO
-          </code>
-          . Define <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">VERIFACTI_WEBHOOK_SECRET</code> en
-          Vercel con el mismo valor que <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">token</code>, y
-          añade <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">SUPABASE_SERVICE_ROLE_KEY</code> para que
-          el webhook pueda actualizar facturas. En cuenta gratuita Verifacti a veces no habilita webhooks; entonces usa
-          el botón «Comprobar estado AEAT» en la factura.
+          Verifacti), al emitir una factura se enviará el registro a Verifacti. El cliente debe tener NIF/CIF. Para
+          comprobar el estado en la AEAT usa el botón «Comprobar estado AEAT» en el detalle de la factura.
         </p>
         <FiscalProfileForm
           initialLegalName={row?.legal_name ?? ""}
