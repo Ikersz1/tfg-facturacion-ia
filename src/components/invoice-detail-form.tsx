@@ -1,12 +1,17 @@
 "use client";
 
-import { useActionState, useCallback, useEffect, useMemo, useState } from "react";
+import { useActionState, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   addInvoiceLineAction,
   deleteInvoiceLineAction,
   issueInvoiceAction,
   type InvoiceActionState,
 } from "@/app/actions/invoices";
+import {
+  refreshVerifactuInvoiceStatusAction,
+  type VerifactiStatusActionState,
+} from "@/app/actions/verifacti-status";
 import { addPaymentAction, type PaymentActionState } from "@/app/actions/payments";
 import { effectiveInvoiceStatus } from "@/lib/invoice-status";
 import { catalogKindLabel, parseCatalogKind } from "@/lib/catalog-kind";
@@ -15,6 +20,7 @@ import Link from "next/link";
 
 const initial: InvoiceActionState = {};
 const payInitial: PaymentActionState = {};
+const vfStatusInitial: VerifactiStatusActionState = {};
 
 type Line = {
   id: string;
@@ -88,7 +94,9 @@ export function InvoiceDetailForm({
   products: ProductOpt[];
   payments?: PaymentRow[];
 }) {
+  const router = useRouter();
   const isDraft = invoice.status === "draft";
+  const vfStatusPrevPending = useRef(false);
 
   const [showAddLineForm, setShowAddLineForm] = useState(false);
 
@@ -154,6 +162,10 @@ export function InvoiceDetailForm({
     issueInvoiceAction,
     initial,
   );
+  const [vfStatusState, vfStatusForm, vfStatusPending] = useActionState(
+    refreshVerifactuInvoiceStatusAction,
+    vfStatusInitial,
+  );
   const [payState, payForm, payPending] = useActionState(
     addPaymentAction,
     payInitial,
@@ -175,6 +187,14 @@ export function InvoiceDetailForm({
       }),
     [invoice.status, invoice.total, invoice.issue_date, invoice.due_date, paidSum],
   );
+
+  useEffect(() => {
+    const was = vfStatusPrevPending.current;
+    vfStatusPrevPending.current = vfStatusPending;
+    if (was && !vfStatusPending && vfStatusState?.ok) {
+      router.refresh();
+    }
+  }, [vfStatusPending, vfStatusState?.ok, router]);
 
   const canRegisterPayment =
     displayStatus === "issued" ||
@@ -249,6 +269,32 @@ export function InvoiceDetailForm({
               </div>
             ) : null}
           </dl>
+          {invoice.verifacti_uuid ? (
+            <form action={vfStatusForm} className="mt-4 flex flex-col gap-2 border-t border-zinc-200 pt-4 dark:border-zinc-700">
+              <input type="hidden" name="invoice_id" value={invoice.id} />
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                El registro puede tardar unos minutos en la AEAT. Pulsa para actualizar el estado
+                (consulta a Verifacti).
+              </p>
+              {vfStatusState?.error ? (
+                <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+                  {vfStatusState.error}
+                </p>
+              ) : null}
+              {vfStatusState?.info ? (
+                <p className="text-sm text-emerald-800 dark:text-emerald-200" role="status">
+                  {vfStatusState.info}
+                </p>
+              ) : null}
+              <button
+                type="submit"
+                disabled={vfStatusPending}
+                className="inline-flex h-9 max-w-xs items-center justify-center rounded-lg border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+              >
+                {vfStatusPending ? "Consultando…" : "Comprobar estado AEAT"}
+              </button>
+            </form>
+          ) : null}
         </div>
       ) : null}
 
