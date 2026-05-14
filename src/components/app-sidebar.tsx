@@ -45,7 +45,7 @@ const SECTIONS: { title: string; items: NavItem[] }[] = [
   },
   {
     title: "Cuenta",
-    items: [{ label: "Ajustes", soon: true, icon: "settings" }],
+    items: [{ label: "Ajustes", href: "/settings/fiscal", icon: "settings" }],
   },
 ];
 

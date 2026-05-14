@@ -6,8 +6,11 @@ import { lineAmounts, roundCurrencyEUR } from "@/lib/money";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { buildVerifactuF1Payload } from "@/lib/verifacti/build-payload";
+import { verifactuCreate } from "@/lib/verifacti/client";
+import { parseVerifactuCreateResponse } from "@/lib/verifacti/parse-create-response";
 
-export type InvoiceActionState = { ok?: true; error?: string };
+export type InvoiceActionState = { ok?: true; error?: string; warn?: string };
 
 export async function createDraftInvoiceAction(
   _prev: InvoiceActionState,
@@ -149,15 +152,42 @@ export async function issueInvoiceAction(
   if (!invoiceId) return { error: "Falta factura." };
 
   const supabase = await createClient();
+  const auth = await requireAuthUserId(supabase);
+  if ("error" in auth) return { error: auth.error };
+
+  const verifactiEnabled = Boolean(process.env.VERIFACTI_NIF_API_KEY?.trim());
 
   const { data: invoice, error: invErr } = await supabase
     .from("invoices")
-    .select("id, status, series, year, client_id")
+    .select("id, status, series, year, client_id, clients ( name, tax_id )")
     .eq("id", invoiceId)
     .single();
 
   if (invErr || !invoice) return { error: "Factura no encontrada." };
   if (invoice.status !== "draft") return { error: "La factura ya no es un borrador." };
+
+  const clientRow = normalizeInvoiceClient(invoice.clients);
+  if (verifactiEnabled) {
+    const { data: fiscal } = await supabase
+      .from("user_fiscal_profile")
+      .select("legal_name, tax_id, address")
+      .eq("user_id", auth.userId)
+      .maybeSingle();
+
+    if (!fiscal?.legal_name?.trim() || !fiscal?.tax_id?.trim() || !fiscal?.address?.trim()) {
+      return {
+        error:
+          "Verifacti activo: rellena tus datos fiscales del emisor en Ajustes → Datos fiscales (razón social, NIF y dirección).",
+      };
+    }
+    const clientNif = clientRow?.tax_id?.trim();
+    if (!clientNif) {
+      return {
+        error:
+          "Verifacti activo: el cliente debe tener NIF/CIF. Edita el cliente o desactiva VERIFACTI_NIF_API_KEY en el servidor.",
+      };
+    }
+  }
 
   const { count, error: cntErr } = await supabase
     .from("invoice_lines")
@@ -216,9 +246,128 @@ export async function issueInvoiceAction(
     payload: { series: refreshed.series, year: refreshed.year, number: num },
   });
 
+  let warn: string | undefined;
+
+  if (verifactiEnabled) {
+    const { data: lineRows, error: linesErr } = await supabase
+      .from("invoice_lines")
+      .select("line_net, line_tax, tax_rate, description")
+      .eq("invoice_id", invoiceId)
+      .order("line_number", { ascending: true });
+
+    if (linesErr || !lineRows?.length) {
+      warn = `Factura emitida, pero no se pudo leer líneas para Verifacti: ${linesErr?.message ?? "sin datos"}.`;
+    } else {
+      const client = clientRow!;
+      try {
+        const descripcion = lineRows
+          .map((r) => (r.description as string)?.trim())
+          .filter(Boolean)
+          .slice(0, 3)
+          .join(" · ");
+
+        const payload = buildVerifactuF1Payload({
+          series: refreshed.series,
+          year: refreshed.year,
+          number: num,
+          issueDateYyyyMmDd: issueDate,
+          clientNif: client.tax_id!.trim(),
+          clientName: client.name.trim() || "Cliente",
+          lines: lineRows.map((r) => ({
+            line_net: Number(r.line_net),
+            line_tax: Number(r.line_tax),
+            tax_rate: Number(r.tax_rate),
+          })),
+          total: Number(refreshed.total),
+          descripcion,
+        });
+
+        const vfRes = await verifactuCreate(payload);
+        const nowIso = new Date().toISOString();
+
+        if (!vfRes.ok) {
+          warn = `Factura emitida, pero Verifacti respondió ${vfRes.status}: ${vfRes.message}`;
+          await supabase
+            .from("invoices")
+            .update({
+              verifacti_last_error: warn.slice(0, 2000),
+              verifacti_updated_at: nowIso,
+            })
+            .eq("id", invoiceId);
+          await supabase.from("invoice_events").insert({
+            invoice_id: invoiceId,
+            event_type: "verifacti_error",
+            payload: { status: vfRes.status, message: vfRes.message.slice(0, 500) },
+          });
+        } else {
+          const parsed = parseVerifactuCreateResponse(vfRes.json);
+          await supabase
+            .from("invoices")
+            .update({
+              verifacti_uuid: parsed.uuid ?? null,
+              verifacti_qr_base64: parsed.qrBase64 ?? null,
+              verifacti_huella: parsed.huella ?? null,
+              verifacti_registro_estado: parsed.estado ?? "recibido",
+              verifacti_last_error: null,
+              verifacti_updated_at: nowIso,
+            })
+            .eq("id", invoiceId);
+          await supabase.from("invoice_events").insert({
+            invoice_id: invoiceId,
+            event_type: "verifacti_sent",
+            payload: {
+              uuid: parsed.uuid ?? null,
+              estado: parsed.estado ?? null,
+              tiene_qr: Boolean(parsed.qrBase64),
+            },
+          });
+        }
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        warn = `Factura emitida, pero el envío a Verifacti falló al preparar la petición: ${msg}`;
+        await supabase
+          .from("invoices")
+          .update({
+            verifacti_last_error: warn.slice(0, 2000),
+            verifacti_updated_at: new Date().toISOString(),
+          })
+          .eq("id", invoiceId);
+        await supabase.from("invoice_events").insert({
+          invoice_id: invoiceId,
+          event_type: "verifacti_error",
+          payload: { message: msg.slice(0, 500) },
+        });
+      }
+    }
+  }
+
   revalidatePath(`/invoices/${invoiceId}`);
   revalidatePath("/invoices");
-  return { ok: true };
+  return warn ? { ok: true, warn } : { ok: true };
+}
+
+function normalizeInvoiceClient(raw: unknown): {
+  name: string;
+  tax_id: string | null;
+} | null {
+  if (!raw) return null;
+  if (Array.isArray(raw)) {
+    const x = raw[0];
+    if (!x || typeof x !== "object") return null;
+    const o = x as { name?: string | null; tax_id?: string | null };
+    return {
+      name: String(o.name ?? "").trim(),
+      tax_id: o.tax_id?.trim() ? o.tax_id.trim() : null,
+    };
+  }
+  if (typeof raw === "object") {
+    const o = raw as { name?: string | null; tax_id?: string | null };
+    return {
+      name: String(o.name ?? "").trim(),
+      tax_id: o.tax_id?.trim() ? o.tax_id.trim() : null,
+    };
+  }
+  return null;
 }
 
 async function recalculateInvoiceTotals(supabase: SupabaseClient, invoiceId: string) {

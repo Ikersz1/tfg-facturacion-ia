@@ -48,6 +48,10 @@ type InvoiceHead = {
   tax_amount: number;
   total: number;
   clients: { name: string; tax_id: string | null } | null;
+  verifacti_uuid?: string | null;
+  verifacti_qr_base64?: string | null;
+  verifacti_registro_estado?: string | null;
+  verifacti_last_error?: string | null;
 };
 
 type PaymentRow = {
@@ -67,16 +71,10 @@ function formatTaxForInput(tax: number): string {
   return String(tax);
 }
 
-function statusLabel(s: string) {
-  const map: Record<string, string> = {
-    draft: "Borrador",
-    issued: "Emitida",
-    partial: "Parcialmente pagada",
-    paid: "Pagada",
-    cancelled: "Anulada",
-    overdue: "Vencida",
-  };
-  return map[s] ?? s;
+function verifactiQrDataUrl(b64: string): string {
+  const t = b64.trim();
+  if (t.startsWith("data:")) return t;
+  return `data:image/png;base64,${t}`;
 }
 
 export function InvoiceDetailForm({
@@ -203,6 +201,56 @@ export function InvoiceDetailForm({
           </p>
         )}
       </div>
+
+      {!isDraft &&
+      (invoice.verifacti_qr_base64 ||
+        invoice.verifacti_registro_estado ||
+        invoice.verifacti_last_error ||
+        invoice.verifacti_uuid) ? (
+        <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+          <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            Verifactu (Verifacti)
+          </h2>
+          <dl className="grid gap-3 text-sm">
+            {invoice.verifacti_registro_estado ? (
+              <div>
+                <dt className="text-zinc-500">Estado registro</dt>
+                <dd className="font-medium text-zinc-900 dark:text-zinc-100">
+                  {invoice.verifacti_registro_estado}
+                </dd>
+              </div>
+            ) : null}
+            {invoice.verifacti_uuid ? (
+              <div>
+                <dt className="text-zinc-500">UUID</dt>
+                <dd className="break-all font-mono text-xs text-zinc-800 dark:text-zinc-200">
+                  {invoice.verifacti_uuid}
+                </dd>
+              </div>
+            ) : null}
+            {invoice.verifacti_last_error ? (
+              <div>
+                <dt className="text-zinc-500">Último error</dt>
+                <dd className="text-amber-800 dark:text-amber-200">{invoice.verifacti_last_error}</dd>
+              </div>
+            ) : null}
+            {invoice.verifacti_qr_base64 ? (
+              <div className="flex flex-col gap-2">
+                <dt className="text-zinc-500">Código QR</dt>
+                <dd>
+                  {/* Base64 dinámico de Verifacti: no usar next/image */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={verifactiQrDataUrl(invoice.verifacti_qr_base64)}
+                    alt="QR Verifactu"
+                    className="h-40 w-40 border border-zinc-200 bg-white object-contain dark:border-zinc-600"
+                  />
+                </dd>
+              </div>
+            ) : null}
+          </dl>
+        </div>
+      ) : null}
 
       <section>
         <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
@@ -618,6 +666,11 @@ export function InvoiceDetailForm({
           {issueState?.error ? (
             <p className="text-sm text-red-700 dark:text-red-300" role="alert">
               {issueState.error}
+            </p>
+          ) : null}
+          {issueState?.warn ? (
+            <p className="text-sm text-amber-800 dark:text-amber-200" role="status">
+              {issueState.warn}
             </p>
           ) : null}
           <button
