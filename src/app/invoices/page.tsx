@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { InvoicesFiltersPanel } from "@/components/invoices-filters-panel";
+import { InvoicesVerifactuBulkButton } from "@/components/invoices-verifactu-bulk-button";
 import { PageHeader } from "@/components/page-header";
 import { effectiveInvoiceStatus } from "@/lib/invoice-status";
 import { parseInvoiceListSearch } from "@/lib/invoice-list-url";
@@ -8,6 +9,39 @@ import { formatMoneyEUR, roundCurrencyEUR } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
+
+function aeatRegistroCell(inv: {
+  verifacti_uuid: string | null;
+  verifacti_registro_estado: string | null;
+}) {
+  const uuid = (inv.verifacti_uuid ?? "").trim();
+  if (!uuid) {
+    return (
+      <span className="text-zinc-400 dark:text-zinc-500" title="No enviada a Verifacti">
+        —
+      </span>
+    );
+  }
+  const est = (inv.verifacti_registro_estado ?? "").trim();
+  if (!est) {
+    return (
+      <span className="text-amber-700 dark:text-amber-300" title="Registro en curso en AEAT">
+        Pendiente
+      </span>
+    );
+  }
+  const pend = est.toLowerCase().includes("pendiente");
+  return (
+    <span
+      className={
+        pend ? "text-amber-700 dark:text-amber-300" : "text-zinc-700 dark:text-zinc-200"
+      }
+      title="Estado del registro Verifactu / AEAT"
+    >
+      {est}
+    </span>
+  );
+}
 
 function statusLabel(s: string) {
   const map: Record<string, string> = {
@@ -28,6 +62,7 @@ type PageProps = {
 export default async function InvoicesPage({ searchParams }: PageProps) {
   const sp = await searchParams;
   const filters = parseInvoiceListSearch(sp);
+  const verifactiConfigured = Boolean(process.env.VERIFACTI_NIF_API_KEY?.trim());
 
   const supabase = await createClient();
 
@@ -39,7 +74,7 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
   let invQuery = supabase
     .from("invoices")
     .select(
-      "id, series, year, number, status, total, issue_date, due_date, created_at, clients ( name )",
+      "id, series, year, number, status, total, issue_date, due_date, created_at, verifacti_uuid, verifacti_registro_estado, clients ( name )",
     )
     .order("created_at", { ascending: false });
 
@@ -135,12 +170,15 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
         <InvoicesFiltersPanel
           clients={clients ?? []}
           actionSlot={
-            <Link
-              href="/invoices/new"
-              className="inline-flex h-10 items-center rounded-lg bg-brand px-4 text-sm font-medium text-brand-fg shadow-sm hover:bg-brand-hover"
-            >
-              Nueva factura
-            </Link>
+            <div className="flex flex-wrap items-stretch justify-end gap-2">
+              <InvoicesVerifactuBulkButton configured={verifactiConfigured} />
+              <Link
+                href="/invoices/new"
+                className="inline-flex h-10 items-center rounded-lg bg-brand px-4 text-sm font-medium text-brand-fg shadow-sm hover:bg-brand-hover"
+              >
+                Nueva factura
+              </Link>
+            </div>
           }
         />
       </Suspense>
@@ -167,7 +205,7 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
         </p>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
-          <table className="w-full min-w-[40rem] text-left text-sm">
+          <table className="w-full min-w-[46rem] text-left text-sm">
             <thead>
               <tr className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800">
                 <th className="px-4 py-3 font-medium text-zinc-700 dark:text-zinc-300">
@@ -178,6 +216,9 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
                 </th>
                 <th className="px-4 py-3 font-medium text-zinc-700 dark:text-zinc-300">
                   Estado
+                </th>
+                <th className="px-4 py-3 font-medium text-zinc-700 dark:text-zinc-300">
+                  AEAT
                 </th>
                 <th className="px-4 py-3 font-medium text-zinc-700 dark:text-zinc-300">
                   Emisión
@@ -238,6 +279,13 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
                     </td>
                     <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
                       {statusLabel(displayStatus)}
+                    </td>
+                    <td className="px-4 py-3 text-sm">
+                      {aeatRegistroCell({
+                        verifacti_uuid: (inv.verifacti_uuid as string | null) ?? null,
+                        verifacti_registro_estado:
+                          (inv.verifacti_registro_estado as string | null) ?? null,
+                      })}
                     </td>
                     <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
                       {emissionCell}

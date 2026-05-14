@@ -12,8 +12,11 @@ En el proyecto Vercel: **Settings → Environment Variables**, añade las mismas
 |----------|---------|--------|
 | `NEXT_PUBLIC_SUPABASE_URL` | Production, Preview, Development | URL del proyecto en Supabase |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Igual | Clave `anon` `public` |
-| `SUPABASE_SERVICE_ROLE_KEY` | Opcional | Solo para scripts con rol de servicio; **el panel no la usa** (datos con RLS + sesión). |
+| `SUPABASE_SERVICE_ROLE_KEY` | Opcional en local | **Obligatoria en Vercel** si activas el cron de estado Verifacti (usa cliente admin para leer/actualizar facturas sin sesión). El panel sigue usando solo `anon` + JWT. |
 | `VERIFACTI_NIF_API_KEY` | Opcional | Clave NIF Verifacti (`vf_test_…` / `vf_prod_…`). |
+| `CRON_SECRET` | Opcional | Secreto largo aleatorio. Si está definido en Vercel, las invocaciones programadas de `/api/cron/verifacti-status` llevan `Authorization: Bearer <CRON_SECRET>`; la ruta rechaza peticiones sin coincidencia. |
+
+El archivo `vercel.json` define un cron **una vez al día** (`0 6 * * *` → ~06:00 UTC; en Hobby la hora real puede variar ±59 min según [Vercel](https://vercel.com/docs/cron-jobs/usage-and-pricing)) contra `/api/cron/verifacti-status`, compatible con el plan **Hobby** (máximo una ejecución diaria). En **Pro** puedes acortar el intervalo si lo necesitas.
 
 Tras guardar, vuelve a desplegar (**Redeploy**) para que el build las inyecte.
 
