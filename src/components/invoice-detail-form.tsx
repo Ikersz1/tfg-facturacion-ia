@@ -205,16 +205,26 @@ export function InvoiceDetailForm({
     <div className="flex flex-col gap-8">
       <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
         {!isDraft ? (
-          <dl className="grid gap-2 text-sm sm:grid-cols-2">
-            <div>
-              <dt className="text-zinc-500">Emisión</dt>
-              <dd>{invoice.issue_date ?? "—"}</dd>
+          <>
+            <dl className="grid gap-2 text-sm sm:grid-cols-2">
+              <div>
+                <dt className="text-zinc-500">Emisión</dt>
+                <dd>{invoice.issue_date ?? "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-zinc-500">Vencimiento</dt>
+                <dd>{invoice.due_date ?? "—"}</dd>
+              </div>
+            </dl>
+            <div className="mt-4 border-t border-zinc-200 pt-4 dark:border-zinc-700">
+              <a
+                href={`/api/invoices/${invoice.id}/pdf`}
+                className="inline-flex h-9 items-center rounded-lg border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+              >
+                Descargar PDF
+              </a>
             </div>
-            <div>
-              <dt className="text-zinc-500">Vencimiento</dt>
-              <dd>{invoice.due_date ?? "—"}</dd>
-            </div>
-          </dl>
+          </>
         ) : (
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
             Borrador · la fecha de emisión se registrará al emitir la factura.
