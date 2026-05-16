@@ -1,39 +1,9 @@
 import { notFound } from "next/navigation";
 import { InvoiceDetailForm } from "@/components/invoice-detail-form";
 import { PageHeader } from "@/components/page-header";
-import { effectiveInvoiceStatus } from "@/lib/invoice-status";
-import { roundCurrencyEUR } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
-
-function statusLabel(s: string) {
-  const map: Record<string, string> = {
-    draft: "Borrador",
-    issued: "Emitida",
-    partial: "Parcialmente pagada",
-    paid: "Pagada",
-    cancelled: "Anulada",
-    overdue: "Vencida",
-  };
-  return map[s] ?? s;
-}
-
-function statusPillClass(s: string): string {
-  if (s === "paid") {
-    return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200";
-  }
-  if (s === "overdue") {
-    return "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200";
-  }
-  if (s === "partial" || s === "issued") {
-    return "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200";
-  }
-  if (s === "cancelled") {
-    return "bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-200";
-  }
-  return "bg-zinc-200 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-100";
-}
 
 type PageProps = { params: Promise<{ id: string }> };
 
@@ -84,17 +54,6 @@ export default async function InvoiceDetailPage(props: PageProps) {
     .eq("invoice_id", id)
     .order("paid_at", { ascending: false });
 
-  const paidSum = roundCurrencyEUR(
-    (payments ?? []).reduce((s, p) => s + Number(p.amount), 0),
-  );
-  const displayStatus = effectiveInvoiceStatus({
-    status: invoice.status as string,
-    total: Number(invoice.total),
-    paidSum,
-    issue_date: invoice.issue_date as string | null,
-    due_date: invoice.due_date as string | null,
-  });
-
   return (
     <div className="flex w-full flex-1 flex-col">
       <PageHeader
@@ -110,16 +69,6 @@ export default async function InvoiceDetailPage(props: PageProps) {
         }
       />
       <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
-        <div className="rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
-          <p className="flex flex-wrap items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
-            <span>Estado actual:</span>
-            <span
-              className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${statusPillClass(displayStatus)}`}
-            >
-              {statusLabel(displayStatus)}
-            </span>
-          </p>
-        </div>
         <InvoiceDetailForm
           invoice={{
             id: invoice.id,
