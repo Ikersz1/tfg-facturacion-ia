@@ -6,6 +6,7 @@ import { lineAmounts, roundCurrencyEUR } from "@/lib/money";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { parseInvoiceSeries } from "@/lib/invoice-series";
 import { buildVerifactuF1Payload } from "@/lib/verifacti/build-payload";
 import { verifactuCreate } from "@/lib/verifacti/client";
 import { parseVerifactuCreateResponse } from "@/lib/verifacti/parse-create-response";
@@ -21,7 +22,10 @@ export async function createDraftInvoiceAction(
     return { error: "Selecciona un cliente." };
   }
 
-  const series = (formData.get("series")?.toString().trim() || "A").slice(0, 8);
+  const series = parseInvoiceSeries(formData.get("series"));
+  if (!series) {
+    return { error: "Selecciona una serie de facturación válida." };
+  }
   const yearRaw = formData.get("year")?.toString().trim();
   const year = yearRaw ? parseInt(yearRaw, 10) : new Date().getFullYear();
   if (Number.isNaN(year) || year < 2000 || year > 2100) {
@@ -159,7 +163,7 @@ export async function issueInvoiceAction(
 
   const { data: invoice, error: invErr } = await supabase
     .from("invoices")
-    .select("id, status, series, year, client_id, clients ( name, tax_id )")
+    .select("id, status, series, year, client_id, clients ( name, tax_id, address )")
     .eq("id", invoiceId)
     .single();
 
@@ -167,26 +171,30 @@ export async function issueInvoiceAction(
   if (invoice.status !== "draft") return { error: "La factura ya no es un borrador." };
 
   const clientRow = normalizeInvoiceClient(invoice.clients);
-  if (verifactiEnabled) {
-    const { data: fiscal } = await supabase
-      .from("user_fiscal_profile")
-      .select("legal_name, tax_id, address")
-      .eq("user_id", auth.userId)
-      .maybeSingle();
+  const clientId = invoice.client_id as string;
 
-    if (!fiscal?.legal_name?.trim() || !fiscal?.tax_id?.trim() || !fiscal?.address?.trim()) {
-      return {
-        error:
-          "Verifacti activo: rellena tus datos fiscales del emisor en Ajustes → Datos fiscales (razón social, NIF y dirección).",
-      };
-    }
-    const clientNif = clientRow?.tax_id?.trim();
-    if (!clientNif) {
-      return {
-        error:
-          "Verifacti activo: el cliente debe tener NIF/CIF. Edita el cliente o desactiva VERIFACTI_NIF_API_KEY en el servidor.",
-      };
-    }
+  const { data: fiscal } = await supabase
+    .from("user_fiscal_profile")
+    .select("legal_name, tax_id, address")
+    .eq("user_id", auth.userId)
+    .maybeSingle();
+
+  if (!fiscal?.legal_name?.trim() || !fiscal?.tax_id?.trim() || !fiscal?.address?.trim()) {
+    return {
+      error:
+        "Completa tus datos fiscales del emisor en Ajustes → Datos fiscales (razón social, NIF y domicilio).",
+    };
+  }
+
+  if (!clientRow?.tax_id?.trim()) {
+    return {
+      error: `El cliente debe tener NIF/CIF. Complétalo en la ficha del cliente (/clients/${clientId}).`,
+    };
+  }
+  if (!clientRow?.address?.trim()) {
+    return {
+      error: `El cliente debe tener domicilio fiscal (calle, CP y ciudad). Complétalo en /clients/${clientId}.`,
+    };
   }
 
   const { count, error: cntErr } = await supabase
@@ -349,22 +357,33 @@ export async function issueInvoiceAction(
 function normalizeInvoiceClient(raw: unknown): {
   name: string;
   tax_id: string | null;
+  address: string | null;
 } | null {
   if (!raw) return null;
   if (Array.isArray(raw)) {
     const x = raw[0];
     if (!x || typeof x !== "object") return null;
-    const o = x as { name?: string | null; tax_id?: string | null };
+    const o = x as {
+      name?: string | null;
+      tax_id?: string | null;
+      address?: string | null;
+    };
     return {
       name: String(o.name ?? "").trim(),
       tax_id: o.tax_id?.trim() ? o.tax_id.trim() : null,
+      address: o.address?.trim() ? o.address.trim() : null,
     };
   }
   if (typeof raw === "object") {
-    const o = raw as { name?: string | null; tax_id?: string | null };
+    const o = raw as {
+      name?: string | null;
+      tax_id?: string | null;
+      address?: string | null;
+    };
     return {
       name: String(o.name ?? "").trim(),
       tax_id: o.tax_id?.trim() ? o.tax_id.trim() : null,
+      address: o.address?.trim() ? o.address.trim() : null,
     };
   }
   return null;

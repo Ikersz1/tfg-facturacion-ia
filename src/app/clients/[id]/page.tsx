@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ClientEditForm } from "@/components/client-edit-form";
 import { PageHeader } from "@/components/page-header";
 import { effectiveInvoiceStatus } from "@/lib/invoice-status";
 import { buildInvoicesListUrl } from "@/lib/invoice-list-url";
@@ -82,38 +83,9 @@ export default async function ClientDetailPage({ params }: PageProps) {
           Nueva factura
         </Link>
       </div>
-      <div className="grid gap-6 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 sm:grid-cols-2">
-        <dl className="space-y-2 text-sm">
-          <div>
-            <dt className="text-zinc-500 dark:text-zinc-400">Email</dt>
-            <dd className="text-zinc-900 dark:text-zinc-50">
-              {client.email ?? "—"}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-zinc-500 dark:text-zinc-400">Teléfono</dt>
-            <dd className="text-zinc-900 dark:text-zinc-50">
-              {client.phone ?? "—"}
-            </dd>
-          </div>
-        </dl>
-        <dl className="space-y-2 text-sm">
-          <div>
-            <dt className="text-zinc-500 dark:text-zinc-400">Dirección</dt>
-            <dd className="text-zinc-900 dark:text-zinc-50">
-              {client.address ?? "—"}
-            </dd>
-          </div>
-          {client.notes ? (
-            <div>
-              <dt className="text-zinc-500 dark:text-zinc-400">Notas</dt>
-              <dd className="whitespace-pre-wrap text-zinc-900 dark:text-zinc-50">
-                {client.notes}
-              </dd>
-            </div>
-          ) : null}
-        </dl>
-      </div>
+
+      <ClientEditForm client={client} />
+
 
       <section>
         <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">

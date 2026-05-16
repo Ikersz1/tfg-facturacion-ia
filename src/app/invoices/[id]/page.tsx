@@ -28,7 +28,7 @@ export default async function InvoiceDetailPage(props: PageProps) {
   const { data: invoice, error: invErr } = await supabase
     .from("invoices")
     .select(
-      "id, series, year, number, status, issue_date, due_date, subtotal, tax_amount, total, verifacti_uuid, verifacti_qr_base64, verifacti_registro_estado, verifacti_last_error, clients ( name, tax_id )",
+      "id, client_id, series, year, number, status, issue_date, due_date, subtotal, tax_amount, total, verifacti_uuid, verifacti_qr_base64, verifacti_registro_estado, verifacti_last_error, clients ( name, tax_id, address )",
     )
     .eq("id", id)
     .maybeSingle();
@@ -38,8 +38,8 @@ export default async function InvoiceDetailPage(props: PageProps) {
   }
 
   const clientRaw = invoice.clients as
-    | { name: string; tax_id: string | null }
-    | { name: string; tax_id: string | null }[]
+    | { name: string; tax_id: string | null; address: string | null }
+    | { name: string; tax_id: string | null; address: string | null }[]
     | null;
   const clientsNormalized = Array.isArray(clientRaw) ? clientRaw[0] ?? null : clientRaw;
 
@@ -103,6 +103,7 @@ export default async function InvoiceDetailPage(props: PageProps) {
       <InvoiceDetailForm
         invoice={{
           id: invoice.id,
+          client_id: invoice.client_id as string,
           series: invoice.series,
           year: invoice.year,
           number: invoice.number,

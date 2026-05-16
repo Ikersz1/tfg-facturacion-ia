@@ -5,6 +5,10 @@ import {
   createClientAction,
   type ClientActionState,
 } from "@/app/actions/clients";
+import {
+  FISCAL_ADDRESS_HINT,
+  FISCAL_ADDRESS_PLACEHOLDER,
+} from "@/lib/fiscal-address-hint";
 
 const initial: ClientActionState = {};
 
@@ -42,10 +46,11 @@ export function ClientForm() {
         </label>
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium text-zinc-700 dark:text-zinc-300">
-            NIF / CIF
+            NIF / CIF <span className="text-red-600">*</span>
           </span>
           <input
             name="tax_id"
+            required
             autoComplete="off"
             className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 outline-none focus:ring-2 focus:ring-brand/40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
           />
@@ -75,13 +80,16 @@ export function ClientForm() {
       </div>
       <label className="flex flex-col gap-1 text-sm">
         <span className="font-medium text-zinc-700 dark:text-zinc-300">
-          Dirección
+          Domicilio fiscal <span className="text-red-600">*</span>
         </span>
         <input
           name="address"
+          required
           autoComplete="street-address"
+          placeholder={FISCAL_ADDRESS_PLACEHOLDER}
           className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 outline-none focus:ring-2 focus:ring-brand/40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
         />
+        <span className="text-xs text-zinc-500 dark:text-zinc-400">{FISCAL_ADDRESS_HINT}</span>
       </label>
       <label className="flex flex-col gap-1 text-sm">
         <span className="font-medium text-zinc-700 dark:text-zinc-300">

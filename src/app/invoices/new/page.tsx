@@ -1,5 +1,6 @@
 import { NewInvoiceForm } from "@/components/new-invoice-form";
 import { PageHeader } from "@/components/page-header";
+import { loadInvoiceSeriesHints } from "@/lib/invoice-series-hints";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -25,6 +26,9 @@ export default async function NewInvoicePage({ searchParams }: PageProps) {
       ? clientIdParam
       : undefined;
 
+  const defaultYear = new Date().getFullYear();
+  const seriesHints = await loadInvoiceSeriesHints(supabase, defaultYear);
+
   return (
     <div className="flex w-full flex-1 flex-col">
       <PageHeader
@@ -37,6 +41,8 @@ export default async function NewInvoicePage({ searchParams }: PageProps) {
         <NewInvoiceForm
           clients={clients ?? []}
           defaultClientId={defaultClientId}
+          seriesHints={seriesHints}
+          defaultYear={defaultYear}
         />
       </div>
     </div>

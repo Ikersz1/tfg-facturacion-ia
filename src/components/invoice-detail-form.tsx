@@ -44,6 +44,7 @@ type ProductOpt = {
 
 type InvoiceHead = {
   id: string;
+  client_id: string;
   series: string;
   year: number;
   number: number | null;
@@ -53,7 +54,7 @@ type InvoiceHead = {
   subtotal: number;
   tax_amount: number;
   total: number;
-  clients: { name: string; tax_id: string | null } | null;
+  clients: { name: string; tax_id: string | null; address: string | null } | null;
   verifacti_uuid?: string | null;
   verifacti_qr_base64?: string | null;
   verifacti_registro_estado?: string | null;
@@ -708,6 +709,23 @@ export function InvoiceDetailForm({
           <h3 className="font-semibold text-accent">
             Emitir factura
           </h3>
+          {invoice.clients &&
+          (!invoice.clients.tax_id?.trim() || !invoice.clients.address?.trim()) ? (
+            <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
+              Antes de emitir, el cliente necesita{" "}
+              {!invoice.clients.tax_id?.trim() ? "NIF/CIF" : null}
+              {!invoice.clients.tax_id?.trim() && !invoice.clients.address?.trim()
+                ? " y "
+                : null}
+              {!invoice.clients.address?.trim() ? "domicilio fiscal (calle, CP y ciudad)" : null}.{" "}
+              <Link
+                href={`/clients/${invoice.client_id}`}
+                className="font-medium underline hover:text-amber-700 dark:hover:text-amber-200"
+              >
+                Editar cliente
+              </Link>
+            </p>
+          ) : null}
           <input type="hidden" name="invoice_id" value={invoice.id} />
           <label className="flex max-w-xs flex-col gap-1 text-sm">
             <span className="font-medium text-accent">

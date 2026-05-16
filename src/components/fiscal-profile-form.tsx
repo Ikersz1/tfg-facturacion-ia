@@ -5,6 +5,10 @@ import {
   upsertFiscalProfileAction,
   type FiscalProfileState,
 } from "@/app/actions/fiscal-profile";
+import {
+  FISCAL_ADDRESS_HINT,
+  FISCAL_ADDRESS_PLACEHOLDER,
+} from "@/lib/fiscal-address-hint";
 
 const initial: FiscalProfileState = {};
 
@@ -74,8 +78,10 @@ export function FiscalProfileForm({
           required
           rows={3}
           defaultValue={initialAddress}
+          placeholder={FISCAL_ADDRESS_PLACEHOLDER}
           className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 outline-none focus:ring-2 focus:ring-brand/40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
         />
+        <span className="text-xs text-zinc-500 dark:text-zinc-400">{FISCAL_ADDRESS_HINT}</span>
       </label>
 
       <button

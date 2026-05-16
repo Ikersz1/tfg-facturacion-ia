@@ -1,10 +1,16 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useMemo, useState } from "react";
 import {
   createDraftInvoiceAction,
   type InvoiceActionState,
 } from "@/app/actions/invoices";
+import {
+  DEFAULT_INVOICE_SERIES,
+  INVOICE_SERIES,
+  type InvoiceSeriesId,
+} from "@/lib/invoice-series";
+import type { InvoiceSeriesHints } from "@/lib/invoice-series-hints";
 
 const initial: InvoiceActionState = {};
 
@@ -13,16 +19,33 @@ type ClientOption = { id: string; name: string };
 export function NewInvoiceForm({
   clients,
   defaultClientId,
+  seriesHints,
+  defaultYear,
 }: {
   clients: ClientOption[];
   defaultClientId?: string;
+  seriesHints: InvoiceSeriesHints;
+  defaultYear: number;
 }) {
   const [state, formAction, pending] = useActionState(
     createDraftInvoiceAction,
     initial,
   );
+  const [series, setSeries] = useState<InvoiceSeriesId>(DEFAULT_INVOICE_SERIES);
+  const [year, setYear] = useState(defaultYear);
 
-  const yearDefault = new Date().getFullYear();
+  const hint = useMemo(() => {
+    const h = seriesHints[series];
+    if (!h || h.year !== year) {
+      return `Serie ${series}: al emitir se asignará el número 1 (si es la primera de ${year}).`;
+    }
+    if (h.lastIssuedNumber == null) {
+      return `Serie ${series} · ${year}: aún no hay facturas emitidas; la primera será la nº 1.`;
+    }
+    return `Serie ${series} · ${year}: última emitida nº ${h.lastIssuedNumber}; al emitir este borrador tocará la nº ${h.nextNumber}.`;
+  }, [series, year, seriesHints]);
+
+  const seriesMeta = INVOICE_SERIES.find((s) => s.id === series);
 
   return (
     <form
@@ -58,29 +81,46 @@ export function NewInvoiceForm({
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium text-zinc-700 dark:text-zinc-300">
-            Serie
+            Serie <span className="text-red-600">*</span>
           </span>
-          <input
+          <select
             name="series"
-            defaultValue="A"
-            maxLength={8}
+            required
+            value={series}
+            onChange={(e) => setSeries(e.target.value as InvoiceSeriesId)}
             className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 outline-none focus:ring-2 focus:ring-brand/40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-          />
+          >
+            {INVOICE_SERIES.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+          {seriesMeta ? (
+            <span className="text-xs text-zinc-500 dark:text-zinc-400">
+              {seriesMeta.description}
+            </span>
+          ) : null}
         </label>
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium text-zinc-700 dark:text-zinc-300">
-            Año
+            Año <span className="text-red-600">*</span>
           </span>
           <input
             name="year"
             type="number"
-            defaultValue={yearDefault}
+            required
+            value={year}
+            onChange={(e) => setYear(Number(e.target.value) || defaultYear)}
             min={2000}
             max={2100}
             className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 outline-none focus:ring-2 focus:ring-brand/40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
           />
         </label>
       </div>
+      <p className="rounded-md bg-zinc-50 px-3 py-2 text-xs text-zinc-600 dark:bg-zinc-800/80 dark:text-zinc-400">
+        {hint}
+      </p>
       <button
         type="submit"
         disabled={pending || clients.length === 0}
