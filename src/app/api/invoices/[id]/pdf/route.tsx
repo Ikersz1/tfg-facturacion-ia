@@ -1,5 +1,5 @@
 import { renderToBuffer } from "@react-pdf/renderer";
-import { InvoicePdfDocument } from "@/lib/invoice-pdf/invoice-document";
+import { InvoicePdfRoot } from "@/lib/invoice-pdf/invoice-document";
 import { loadInvoicePdfData } from "@/lib/invoice-pdf/load-data";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +14,7 @@ export async function GET(_request: Request, context: RouteContext) {
   }
 
   const buffer = await renderToBuffer(
-    <InvoicePdfDocument data={loaded.data} />,
+    <InvoicePdfRoot data={loaded.data} template={loaded.template} />,
   );
 
   const safeName = loaded.data.numberLabel.replace(/[^\w.-]+/g, "_");

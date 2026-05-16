@@ -1,5 +1,6 @@
 import { FiscalProfileForm } from "@/components/fiscal-profile-form";
 import { PageHeader } from "@/components/page-header";
+import { parseInvoicePdfTemplate } from "@/lib/invoice-pdf/template-id";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -14,9 +15,13 @@ export default async function FiscalSettingsPage() {
 
   const { data: row } = await supabase
     .from("user_fiscal_profile")
-    .select("legal_name, tax_id, address")
+    .select("legal_name, tax_id, address, invoice_pdf_template")
     .eq("user_id", user.id)
     .maybeSingle();
+
+  const pdfTemplate = parseInvoicePdfTemplate(
+    row?.invoice_pdf_template as string | null | undefined,
+  );
 
   return (
     <div className="flex w-full flex-1 flex-col">
@@ -37,6 +42,7 @@ export default async function FiscalSettingsPage() {
           initialLegalName={row?.legal_name ?? ""}
           initialTaxId={row?.tax_id ?? ""}
           initialAddress={row?.address ?? ""}
+          initialPdfTemplate={pdfTemplate}
         />
       </div>
     </div>

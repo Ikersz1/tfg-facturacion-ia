@@ -4,6 +4,10 @@ import { createClient } from "@/lib/supabase/server";
 import { requireAuthUserId } from "@/lib/supabase/require-auth-user";
 import { roundCurrencyEUR } from "@/lib/money";
 import type { InvoicePdfData, InvoicePdfVatRow } from "@/lib/invoice-pdf/types";
+import {
+  type InvoicePdfTemplateId,
+  parseInvoicePdfTemplate,
+} from "@/lib/invoice-pdf/template-id";
 
 function buildVatRows(
   lines: { tax_rate: number; line_net: number; line_tax: number }[],
@@ -23,7 +27,10 @@ function buildVatRows(
 
 export async function loadInvoicePdfData(
   invoiceId: string,
-): Promise<{ data: InvoicePdfData } | { error: string; status: number }> {
+): Promise<
+  | { data: InvoicePdfData; template: InvoicePdfTemplateId }
+  | { error: string; status: number }
+> {
   const supabase = await createClient();
   const auth = await requireAuthUserId(supabase);
   if ("error" in auth) return { error: auth.error, status: 401 };
@@ -56,7 +63,7 @@ export async function loadInvoicePdfData(
 
   const { data: profile } = await supabase
     .from("user_fiscal_profile")
-    .select("legal_name, tax_id, address")
+    .select("legal_name, tax_id, address, invoice_pdf_template")
     .eq("user_id", auth.userId)
     .maybeSingle();
 
@@ -86,6 +93,10 @@ export async function loadInvoicePdfData(
 
   const numberLabel = `${invoice.series}-${invoice.year}/${invoice.number}`;
 
+  const template = parseInvoicePdfTemplate(
+    profile?.invoice_pdf_template as string | null | undefined,
+  );
+
   return {
     data: {
       numberLabel,
@@ -114,5 +125,6 @@ export async function loadInvoicePdfData(
       verifacti_uuid: (invoice.verifacti_uuid as string | null) ?? null,
       verifacti_qr_base64: (invoice.verifacti_qr_base64 as string | null) ?? null,
     },
+    template,
   };
 }

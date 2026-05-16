@@ -9,6 +9,11 @@ import {
   FISCAL_ADDRESS_HINT,
   FISCAL_ADDRESS_PLACEHOLDER,
 } from "@/lib/fiscal-address-hint";
+import {
+  INVOICE_PDF_TEMPLATE_IDS,
+  INVOICE_PDF_TEMPLATE_LABELS,
+  type InvoicePdfTemplateId,
+} from "@/lib/invoice-pdf/template-id";
 
 const initial: FiscalProfileState = {};
 
@@ -16,10 +21,12 @@ export function FiscalProfileForm({
   initialLegalName,
   initialTaxId,
   initialAddress,
+  initialPdfTemplate,
 }: {
   initialLegalName: string;
   initialTaxId: string;
   initialAddress: string;
+  initialPdfTemplate: InvoicePdfTemplateId;
 }) {
   const [state, formAction, pending] = useActionState(
     upsertFiscalProfileAction,
@@ -83,6 +90,27 @@ export function FiscalProfileForm({
         />
         <span className="text-xs text-zinc-500 dark:text-zinc-400">{FISCAL_ADDRESS_HINT}</span>
       </label>
+
+      <div className="flex flex-col gap-2 text-sm">
+        <span className="font-medium text-zinc-700 dark:text-zinc-300">
+          Plantilla del PDF de factura
+        </span>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          Afecta solo a la descarga PDF de facturas emitidas. Puedes cambiarla cuando quieras.
+        </p>
+        <select
+          name="invoice_pdf_template"
+          defaultValue={initialPdfTemplate}
+          className="max-w-md rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 outline-none focus:ring-2 focus:ring-brand/40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+        >
+          {INVOICE_PDF_TEMPLATE_IDS.map((id) => (
+            <option key={id} value={id}>
+              {INVOICE_PDF_TEMPLATE_LABELS[id].title} —{" "}
+              {INVOICE_PDF_TEMPLATE_LABELS[id].description}
+            </option>
+          ))}
+        </select>
+      </div>
 
       <button
         type="submit"
