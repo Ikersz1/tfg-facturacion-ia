@@ -126,6 +126,7 @@ export function InvoiceDetailForm({
   const vfStatusPrevPending = useRef(false);
 
   const [showAddLineForm, setShowAddLineForm] = useState(false);
+  const [showAddPaymentForm, setShowAddPaymentForm] = useState(false);
 
   const productById = useMemo(() => {
     const m = new Map<string, ProductOpt>();
@@ -193,8 +194,19 @@ export function InvoiceDetailForm({
     refreshVerifactuInvoiceStatusAction,
     vfStatusInitial,
   );
+  const addPaymentAndMaybeClose = useCallback(
+    async (prev: PaymentActionState, formData: FormData) => {
+      const result = await addPaymentAction(prev, formData);
+      if (result?.ok) {
+        setShowAddPaymentForm(false);
+      }
+      return result;
+    },
+    [],
+  );
+
   const [payState, payForm, payPending] = useActionState(
-    addPaymentAction,
+    addPaymentAndMaybeClose,
     payInitial,
   );
 
@@ -709,11 +721,41 @@ export function InvoiceDetailForm({
             </div>
           </div>
 
-          <div>
+          <section>
             <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
               Cobros
             </h2>
-            {payments.length > 0 ? (
+            {payments.length === 0 ? (
+              !canRegisterPayment ? (
+                <p className="rounded-xl border border-dashed border-zinc-300 px-4 py-8 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
+                  Sin cobros registrados.
+                </p>
+              ) : !showAddPaymentForm ? (
+                <div className="flex flex-col items-center justify-center gap-5 rounded-xl border border-dashed border-zinc-300 bg-zinc-50/80 px-6 py-12 text-center dark:border-zinc-600 dark:bg-zinc-900/40">
+                  <div>
+                    <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                      Aún no hay cobros en esta factura
+                    </p>
+                    {pendingToPay > 0 ? (
+                      <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+                        Pendiente de cobro: {formatMoneyEUR(pendingToPay)}
+                      </p>
+                    ) : null}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddPaymentForm(true)}
+                    aria-label="Registrar el primer cobro de la factura"
+                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-brand-fg shadow-sm transition hover:bg-brand-hover focus:outline-none focus:ring-2 focus:ring-brand/40 focus:ring-offset-2 dark:focus:ring-offset-zinc-900"
+                  >
+                    <span className="text-lg leading-none" aria-hidden>
+                      +
+                    </span>
+                    Registrar primer cobro
+                  </button>
+                </div>
+              ) : null
+            ) : (
               <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
                 <table className="w-full min-w-[28rem] text-left text-sm">
                   <thead>
@@ -750,91 +792,154 @@ export function InvoiceDetailForm({
                   </tbody>
                 </table>
               </div>
-            ) : (
-              <p className="rounded-xl border border-dashed border-zinc-300 px-4 py-8 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
-                Aún no hay cobros registrados.
-              </p>
             )}
-          </div>
 
-          {canRegisterPayment ? (
-            <form
-              action={payForm}
-              className="flex flex-col gap-4 rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="font-semibold text-zinc-900 dark:text-zinc-50">
-                  Registrar cobro
-                </h3>
-                {pendingToPay > 0 ? (
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                    Sugerido: {formatMoneyEUR(Math.max(0, pendingToPay))}
+            {canRegisterPayment && payments.length > 0 && !showAddPaymentForm ? (
+              <div className="mt-4 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm ring-1 ring-zinc-950/5 dark:border-zinc-600 dark:bg-zinc-900 dark:ring-white/10">
+                <button
+                  type="button"
+                  onClick={() => setShowAddPaymentForm(true)}
+                  aria-label="Registrar otro cobro en la factura"
+                  className="flex w-full items-center gap-4 px-4 py-3.5 text-left transition hover:bg-blue-50/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500/40 dark:hover:bg-blue-950/25 dark:focus-visible:ring-blue-400/35 sm:px-5 sm:py-4"
+                >
+                  <span
+                    className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-xl font-light leading-none text-white shadow-md shadow-blue-600/25 dark:bg-blue-500 dark:shadow-blue-500/20"
+                    aria-hidden
+                  >
+                    +
                   </span>
-                ) : null}
+                  <span className="min-w-0 flex-1 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                    Añadir otro cobro
+                  </span>
+                  <span
+                    className="hidden shrink-0 text-2xl font-light leading-none text-blue-500/70 dark:text-blue-400/80 sm:block"
+                    aria-hidden
+                  >
+                    ›
+                  </span>
+                </button>
               </div>
-              <input type="hidden" name="invoice_id" value={invoice.id} />
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-zinc-700 dark:text-zinc-300">
-                    Importe cobrado (€) <span className="text-red-600">*</span>
-                  </span>
-                  <input
-                    name="amount"
-                    required
-                    inputMode="decimal"
-                    placeholder={
-                      pendingToPay > 0
-                        ? pendingToPay.toFixed(2)
-                        : "0,00"
-                    }
-                    className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-zinc-700 dark:text-zinc-300">
-                    Fecha y hora
-                  </span>
-                  <input
-                    type="datetime-local"
-                    name="paid_at"
-                    className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-zinc-700 dark:text-zinc-300">
-                    Método de cobro
-                  </span>
-                  <input
-                    name="method"
-                    placeholder="Transferencia, tarjeta, efectivo..."
-                    className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="font-medium text-zinc-700 dark:text-zinc-300">
-                    Notas
-                  </span>
-                  <input
-                    name="notes"
-                    placeholder="Referencia, banco, observaciones..."
-                    className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-                  />
-                </label>
+            ) : null}
+
+            {payState?.error && !showAddPaymentForm ? (
+              <p className="mt-2 text-sm text-red-600 dark:text-red-400" role="alert">
+                {payState.error}
+              </p>
+            ) : null}
+
+            {canRegisterPayment && showAddPaymentForm ? (
+              <div className="mt-4">
+                <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-md ring-1 ring-zinc-950/5 dark:border-zinc-600 dark:bg-zinc-900 dark:ring-white/10">
+                  <div className="flex flex-col gap-4 border-b border-zinc-100 bg-gradient-to-r from-brand-soft via-white to-brand-soft/40 px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-6 dark:border-zinc-800 dark:from-brand-soft/30 dark:via-zinc-900 dark:to-zinc-900/80">
+                    <div className="min-w-0 space-y-1">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-300">
+                        Registrar en la factura
+                      </p>
+                      <h3 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                        Nuevo cobro
+                      </h3>
+                      {pendingToPay > 0 ? (
+                        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                          Pendiente:{" "}
+                          <span className="font-medium tabular-nums text-zinc-800 dark:text-zinc-200">
+                            {formatMoneyEUR(pendingToPay)}
+                          </span>
+                        </p>
+                      ) : null}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddPaymentForm(false)}
+                      className="shrink-0 self-start rounded-full border border-zinc-200 bg-white/90 px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition hover:border-zinc-300 hover:bg-white dark:border-zinc-600 dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:border-zinc-500 dark:hover:bg-zinc-800"
+                    >
+                      Cerrar
+                    </button>
+                  </div>
+
+                  <form action={payForm} className="flex flex-col gap-6 p-5 sm:p-6">
+                    <input type="hidden" name="invoice_id" value={invoice.id} />
+
+                    <div className="rounded-xl border border-zinc-100 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-950/50">
+                      <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                        Importe y fecha
+                      </p>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <label className="flex flex-col gap-2">
+                          <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                            Importe cobrado (€){" "}
+                            <span className="text-red-600 dark:text-red-400">*</span>
+                          </span>
+                          <input
+                            name="amount"
+                            required
+                            inputMode="decimal"
+                            placeholder={
+                              pendingToPay > 0 ? pendingToPay.toFixed(2) : "0,00"
+                            }
+                            className="rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-sm tabular-nums text-zinc-900 shadow-sm placeholder:text-zinc-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-50 dark:placeholder:text-zinc-500 dark:focus:border-blue-400 dark:focus:ring-blue-400/30"
+                          />
+                        </label>
+                        <label className="flex flex-col gap-2">
+                          <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                            Fecha y hora
+                          </span>
+                          <input
+                            type="datetime-local"
+                            name="paid_at"
+                            className="rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-50 dark:focus:border-blue-400 dark:focus:ring-blue-400/30"
+                          />
+                        </label>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                        Detalle opcional
+                      </p>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <label className="flex flex-col gap-2">
+                          <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                            Método de cobro
+                          </span>
+                          <input
+                            name="method"
+                            placeholder="Transferencia, tarjeta, efectivo..."
+                            className="rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 shadow-sm placeholder:text-zinc-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-50 dark:placeholder:text-zinc-500 dark:focus:border-blue-400 dark:focus:ring-blue-400/30"
+                          />
+                        </label>
+                        <label className="flex flex-col gap-2">
+                          <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                            Notas
+                          </span>
+                          <input
+                            name="notes"
+                            placeholder="Referencia, banco, observaciones..."
+                            className="rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 shadow-sm placeholder:text-zinc-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-50 dark:placeholder:text-zinc-500 dark:focus:border-blue-400 dark:focus:ring-blue-400/30"
+                          />
+                        </label>
+                      </div>
+                    </div>
+
+                    {payState?.error ? (
+                      <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+                        {payState.error}
+                      </p>
+                    ) : null}
+
+                    <div className="flex flex-col gap-3 border-t border-zinc-100 pt-2 dark:border-zinc-800 sm:flex-row sm:items-center sm:justify-end">
+                      <button
+                        type="submit"
+                        disabled={payPending}
+                        className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-blue-600 px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-60 dark:bg-blue-500 dark:hover:bg-blue-400 dark:focus:ring-blue-400 dark:focus:ring-offset-zinc-900 sm:w-auto sm:min-w-[11rem]"
+                      >
+                        {payPending ? "Guardando…" : "Guardar cobro"}
+                      </button>
+                    </div>
+                  </form>
+                </div>
               </div>
-              {payState?.error ? (
-                <p className="text-sm text-red-600 dark:text-red-400" role="alert">
-                  {payState.error}
-                </p>
-              ) : null}
-              <button
-                type="submit"
-                disabled={payPending}
-                className="inline-flex h-10 max-w-xs items-center justify-center rounded-lg bg-brand px-4 text-sm font-medium text-brand-fg hover:bg-brand-hover disabled:opacity-60"
-              >
-                {payPending ? "Guardando cobro..." : "Guardar cobro"}
-              </button>
-            </form>
-          ) : null}
+            ) : null}
+          </section>
         </section>
       ) : null}
 
