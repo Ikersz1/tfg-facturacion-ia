@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, type ReactNode } from "react";
 import { buildInvoicesListUrl, parseInvoiceListSearch } from "@/lib/invoice-list-url";
 
 type ClientOpt = { id: string; name: string };
@@ -20,10 +20,13 @@ const STATUS_OPTS = [
 const lbl =
   "text-xs font-medium leading-none text-zinc-500 dark:text-zinc-400";
 
-const ctrl =
-  "h-10 min-h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100";
-
-export function InvoicesFiltersPanel({ clients }: { clients: ClientOpt[] }) {
+export function InvoicesFiltersPanel({
+  clients,
+  actionSlot,
+}: {
+  clients: ClientOpt[];
+  actionSlot?: ReactNode;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -67,10 +70,14 @@ export function InvoicesFiltersPanel({ clients }: { clients: ClientOpt[] }) {
     [router, searchParams],
   );
 
+  const ctrl =
+    "h-10 min-h-10 rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100";
+
   return (
-    <div className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-4 dark:border-zinc-700 dark:bg-zinc-900/50">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.4fr)_10rem_9.5rem_9.5rem_auto] lg:items-end">
-        <div className="flex min-w-0 flex-col gap-1 sm:col-span-2 lg:col-span-1">
+    <div className="mb-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+        <div className="flex min-w-0 flex-1 flex-wrap items-end gap-x-3 gap-y-2">
+        <div className="flex min-w-0 flex-col gap-1">
           <label htmlFor="flt-client" className={lbl}>
             Cliente
           </label>
@@ -78,9 +85,9 @@ export function InvoicesFiltersPanel({ clients }: { clients: ClientOpt[] }) {
             id="flt-client"
             value={filters.client_id ?? ""}
             onChange={(e) => commit({ client_id: e.target.value })}
-            className={ctrl}
+            className={`${ctrl} max-w-[11rem] sm:max-w-[14rem]`}
           >
-            <option value="">Todos los clientes</option>
+            <option value="">Todos</option>
             {clients.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
@@ -97,7 +104,7 @@ export function InvoicesFiltersPanel({ clients }: { clients: ClientOpt[] }) {
             id="flt-status"
             value={filters.status ?? ""}
             onChange={(e) => commit({ status: e.target.value })}
-            className={ctrl}
+            className={`${ctrl} w-[8.5rem]`}
           >
             {STATUS_OPTS.map((o) => (
               <option key={o.value || "all"} value={o.value}>
@@ -107,37 +114,34 @@ export function InvoicesFiltersPanel({ clients }: { clients: ClientOpt[] }) {
           </select>
         </div>
 
-        <div className="flex flex-col gap-1">
-          <label htmlFor="flt-from" className={lbl}>
-            Emisión desde
-          </label>
-          <input
-            id="flt-from"
-            type="date"
-            value={filters.from ?? ""}
-            onChange={(e) => commit({ from: e.target.value })}
-            className={ctrl}
-          />
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <label htmlFor="flt-to" className={lbl}>
-            Emisión hasta
-          </label>
-          <input
-            id="flt-to"
-            type="date"
-            value={filters.to ?? ""}
-            onChange={(e) => commit({ to: e.target.value })}
-            className={ctrl}
-          />
+        <div className="flex min-w-0 flex-col gap-1">
+          <span className={lbl}>Emisión (fecha factura)</span>
+          <div className="flex items-center gap-1">
+            <input
+              id="flt-from"
+              type="date"
+              value={filters.from ?? ""}
+              onChange={(e) => commit({ from: e.target.value })}
+              className={`${ctrl} w-[10.25rem]`}
+              title="Desde"
+            />
+            <span className="pb-1 text-xs text-zinc-400">a</span>
+            <input
+              id="flt-to"
+              type="date"
+              value={filters.to ?? ""}
+              onChange={(e) => commit({ to: e.target.value })}
+              className={`${ctrl} w-[10.25rem]`}
+              title="Hasta"
+            />
+          </div>
         </div>
 
         {hasActiveFilters ? (
-          <div className="flex items-end sm:col-span-2 lg:col-span-1">
+          <div className="flex items-end pb-0.5">
             <Link
               href="/invoices"
-              className="group inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-zinc-200 bg-white px-3.5 text-sm font-medium text-zinc-600 shadow-sm outline-none transition hover:border-brand-border hover:bg-brand-soft hover:text-accent focus-visible:ring-2 focus-visible:ring-brand/30 lg:w-auto dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-brand-border dark:hover:bg-brand-soft dark:hover:text-accent"
+              className="group inline-flex h-10 items-center gap-2 rounded-md border border-zinc-200 bg-white px-3.5 text-sm font-medium text-zinc-600 shadow-sm outline-none transition hover:border-brand-border hover:bg-brand-soft hover:text-accent focus-visible:ring-2 focus-visible:ring-brand/30 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300 dark:shadow-none dark:hover:border-brand-border dark:hover:bg-brand-soft dark:hover:text-accent dark:focus-visible:ring-brand/35 dark:focus-visible:ring-offset-zinc-900"
               title="Quitar todos los filtros"
             >
               <svg
@@ -151,25 +155,29 @@ export function InvoicesFiltersPanel({ clients }: { clients: ClientOpt[] }) {
               >
                 <path d="M18 6 6 18M6 6l12 12" />
               </svg>
-              Limpiar
+              Limpiar filtros
             </Link>
           </div>
-        ) : (
-          <div className="hidden lg:block" aria-hidden />
-        )}
+        ) : null}
+        </div>
+
+        {actionSlot ? (
+          <div className="flex shrink-0 justify-end sm:justify-start">{actionSlot}</div>
+        ) : null}
       </div>
 
-      <p className="mt-3 text-xs leading-snug text-zinc-500 dark:text-zinc-400">
-        Filtra por día de emisión. Con rango de fechas no aparecen borradores sin fecha.
+      <p className="mt-2 text-xs leading-snug text-zinc-400 dark:text-zinc-500">
+        Las fechas filtran por <span className="text-zinc-500 dark:text-zinc-400">día de emisión</span> de la
+        factura. Si marcas rango, no se listan borradores sin fecha.
         {filters.segment ? (
-          <span className="mt-1 block text-zinc-600 dark:text-zinc-300">
-            Vista desde informes (
+          <span className="mt-1 block text-zinc-500 dark:text-zinc-400">
+            Vista desde el donut de informes (segmento{" "}
             {filters.segment === "paid"
               ? "pagadas"
               : filters.segment === "pend"
                 ? "pendientes"
                 : "vencidas"}
-            ). Cambia un filtro para salir.
+            ). Cambia un filtro para salir de esta vista.
           </span>
         ) : null}
       </p>

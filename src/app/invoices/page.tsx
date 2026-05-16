@@ -159,28 +159,29 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
     <div className="flex w-full flex-1 flex-col">
       <PageHeader eyebrow="Gestión" title="Facturas" />
       <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
-        <div className="flex flex-col gap-3">
-          <div className="flex justify-end">
-            <Link
-              href="/invoices/new"
-              className="inline-flex h-10 shrink-0 items-center justify-center rounded-lg bg-brand px-4 text-sm font-medium text-brand-fg shadow-sm hover:bg-brand-hover"
-            >
-              Nueva factura
-            </Link>
-          </div>
-          <InvoicesVerifactuBulkButton configured={verifactiConfigured} />
-        </div>
-
-        <Suspense
-          fallback={
-            <div
-              className="h-28 animate-pulse rounded-xl bg-zinc-100 dark:bg-zinc-800/80"
-              aria-hidden
-            />
+      <Suspense
+        fallback={
+          <div
+            className="mb-4 h-24 animate-pulse rounded-lg bg-zinc-100 dark:bg-zinc-800/80"
+            aria-hidden
+          />
+        }
+      >
+        <InvoicesFiltersPanel
+          clients={clients ?? []}
+          actionSlot={
+            <div className="flex flex-wrap items-stretch justify-end gap-2">
+              <InvoicesVerifactuBulkButton configured={verifactiConfigured} />
+              <Link
+                href="/invoices/new"
+                className="inline-flex h-10 items-center rounded-lg bg-brand px-4 text-sm font-medium text-brand-fg shadow-sm hover:bg-brand-hover"
+              >
+                Nueva factura
+              </Link>
+            </div>
           }
-        >
-          <InvoicesFiltersPanel clients={clients ?? []} />
-        </Suspense>
+        />
+      </Suspense>
 
       {error ? (
         <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
