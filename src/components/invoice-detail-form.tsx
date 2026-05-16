@@ -512,13 +512,8 @@ export function InvoiceDetailForm({
               >
                 +
               </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50">
-                  Añadir otra línea
-                </span>
-                <span className="mt-0.5 block text-xs leading-snug text-zinc-500 dark:text-zinc-400">
-                  Desde el catálogo o como línea libre
-                </span>
+              <span className="min-w-0 flex-1 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                Añadir otra línea
               </span>
               <span
                 className="hidden shrink-0 text-2xl font-light leading-none text-blue-500/70 dark:text-blue-400/80 sm:block"
@@ -552,13 +547,6 @@ export function InvoiceDetailForm({
                   <h3 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
                     Nueva línea
                   </h3>
-                  <p className="max-w-xl text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-                    Con catálogo se rellenan concepto, precio e IVA; puedes ajustarlos. Con{" "}
-                    <span className="font-medium text-zinc-800 dark:text-zinc-200">
-                      línea libre
-                    </span>{" "}
-                    escribes tú el concepto y los importes.
-                  </p>
                 </div>
                 <button
                   type="button"
