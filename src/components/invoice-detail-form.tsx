@@ -244,10 +244,27 @@ export function InvoiceDetailForm({
             <p className="mt-1 text-base font-semibold text-zinc-900 dark:text-zinc-50">
               {numberLabel}
             </p>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">
-              {invoice.clients?.name ?? "Cliente"}{" "}
-              {invoice.clients?.tax_id ? `· ${invoice.clients.tax_id}` : ""}
-            </p>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-zinc-600 dark:text-zinc-400">
+              {invoice.clients ? (
+                <Link
+                  href={`/clients/${invoice.client_id}`}
+                  className="font-medium text-accent underline underline-offset-2 hover:text-accent-hover"
+                  title="Abrir ficha del cliente"
+                >
+                  {invoice.clients.name}
+                </Link>
+              ) : (
+                <span>Cliente</span>
+              )}
+              {invoice.clients?.tax_id ? <span>· {invoice.clients.tax_id}</span> : null}
+              <Link
+                href={`/clients/${invoice.client_id}`}
+                className="text-xs font-medium text-zinc-500 underline underline-offset-2 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+                title="Editar cliente"
+              >
+                Editar
+              </Link>
+            </div>
           </div>
           <span
             className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusBadgeClass(displayStatus)}`}
@@ -329,12 +346,12 @@ export function InvoiceDetailForm({
                   {invoice.verifacti_uuid}
                 </dd>
                 <a
-                  href={`https://www.verifacti.com/?uuid=${encodeURIComponent(invoice.verifacti_uuid)}`}
+                  href={`/api/verifacti/verify/${invoice.id}`}
                   target="_blank"
                   rel="noreferrer"
                   className="mt-1 inline-flex text-xs font-medium text-accent underline underline-offset-2 hover:text-accent-hover"
                 >
-                  Abrir enlace Verifacti
+                  Ir a verificación de factura
                 </a>
               </div>
             ) : null}

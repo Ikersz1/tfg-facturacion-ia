@@ -82,9 +82,17 @@ export default async function ClientDetailPage({ params }: PageProps) {
         >
           Nueva factura
         </Link>
+        <a
+          href="#editar-cliente"
+          className="inline-flex h-10 items-center rounded-lg border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+        >
+          Editar cliente
+        </a>
       </div>
 
-      <ClientEditForm client={client} />
+      <div id="editar-cliente">
+        <ClientEditForm client={client} />
+      </div>
 
 
       <section>
