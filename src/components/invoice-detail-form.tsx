@@ -499,20 +499,33 @@ export function InvoiceDetailForm({
         )}
 
         {isDraft && lines.length > 0 && !showAddLineForm ? (
-          <div className="mt-3 flex justify-start">
+          <div className="mt-4 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm ring-1 ring-zinc-950/5 dark:border-zinc-600 dark:bg-zinc-900 dark:ring-white/10">
             <button
               type="button"
               onClick={() => setShowAddLineForm(true)}
-              aria-label="Añadir otra línea"
-              className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-800 shadow-sm transition hover:border-brand-border hover:bg-brand-soft dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-brand-border dark:hover:bg-brand-soft"
+              aria-label="Añadir otra línea a la factura"
+              className="flex w-full items-center gap-4 px-4 py-3.5 text-left transition hover:bg-blue-50/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500/40 dark:hover:bg-blue-950/25 dark:focus-visible:ring-blue-400/35 sm:px-5 sm:py-4"
             >
               <span
-                className="flex size-7 items-center justify-center rounded-md bg-brand text-sm leading-none text-brand-fg"
+                className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-xl font-light leading-none text-white shadow-md shadow-blue-600/25 dark:bg-blue-500 dark:shadow-blue-500/20"
                 aria-hidden
               >
                 +
               </span>
-              Añadir línea
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+                  Añadir otra línea
+                </span>
+                <span className="mt-0.5 block text-xs leading-snug text-zinc-500 dark:text-zinc-400">
+                  Desde el catálogo o como línea libre
+                </span>
+              </span>
+              <span
+                className="hidden shrink-0 text-2xl font-light leading-none text-blue-500/70 dark:text-blue-400/80 sm:block"
+                aria-hidden
+              >
+                ›
+              </span>
             </button>
           </div>
         ) : null}
@@ -530,64 +543,87 @@ export function InvoiceDetailForm({
 
         {isDraft && showAddLineForm ? (
           <div className="mt-4">
-            <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
-              <div className="mb-4 flex items-center justify-between gap-2">
-                  <h3 className="font-semibold text-zinc-900 dark:text-zinc-50">
+            <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-md ring-1 ring-zinc-950/5 dark:border-zinc-600 dark:bg-zinc-900 dark:ring-white/10">
+              <div className="flex flex-col gap-4 border-b border-zinc-100 bg-gradient-to-r from-brand-soft via-white to-brand-soft/40 px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-6 dark:border-zinc-800 dark:from-brand-soft/30 dark:via-zinc-900 dark:to-zinc-900/80">
+                <div className="min-w-0 space-y-1">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-300">
+                    Añadir a la factura
+                  </p>
+                  <h3 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
                     Nueva línea
                   </h3>
-                  <button
-                    type="button"
-                    onClick={() => setShowAddLineForm(false)}
-                    className="text-sm text-zinc-500 underline-offset-2 hover:text-zinc-800 hover:underline dark:text-zinc-400 dark:hover:text-zinc-200"
-                  >
-                    Cerrar
-                  </button>
-              </div>
-              <form action={addLine} className="flex flex-col gap-4">
-                  <input type="hidden" name="invoice_id" value={invoice.id} />
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                    Si eliges un producto del catálogo, se rellenan concepto, precio unitario
-                    e IVA; puedes cambiarlos antes de guardar. Con{" "}
-                    <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                  <p className="max-w-xl text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+                    Con catálogo se rellenan concepto, precio e IVA; puedes ajustarlos. Con{" "}
+                    <span className="font-medium text-zinc-800 dark:text-zinc-200">
                       línea libre
                     </span>{" "}
-                    escribes tú todo (gastos puntuales, textos a medida, etc.).
+                    escribes tú el concepto y los importes.
                   </p>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-                      <span className="font-medium text-zinc-700 dark:text-zinc-300">
-                        Producto / servicio (opcional)
-                      </span>
-                      <select
-                        name="product_id"
-                        value={addLineProductId}
-                        onChange={(e) => onAddLineProductChange(e.target.value)}
-                        className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-                      >
-                        <option value="">— Línea libre (sin catálogo) —</option>
-                        {products.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.name} · {catalogKindLabel(parseCatalogKind(p.kind))} ·{" "}
-                            {formatMoneyEUR(p.unit_price)}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-                      <span className="font-medium text-zinc-700 dark:text-zinc-300">
-                        Concepto / descripción <span className="text-red-600">*</span>
-                      </span>
-                      <input
-                        name="description"
-                        required
-                        value={addLineDescription}
-                        onChange={(e) => setAddLineDescription(e.target.value)}
-                        placeholder="Ej. Licencia software, horas de consultoría…"
-                        className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-                      />
-                    </label>
-                    <label className="flex flex-col gap-1 text-sm">
-                      <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAddLineForm(false)}
+                  className="shrink-0 self-start rounded-full border border-zinc-200 bg-white/90 px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition hover:border-zinc-300 hover:bg-white dark:border-zinc-600 dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:border-zinc-500 dark:hover:bg-zinc-800"
+                >
+                  Cerrar
+                </button>
+              </div>
+
+              <form action={addLine} className="flex flex-col gap-6 p-5 sm:p-6">
+                <input type="hidden" name="invoice_id" value={invoice.id} />
+
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                    Origen
+                  </p>
+                  <label className="flex flex-col gap-2">
+                    <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                      Producto del catálogo{" "}
+                      <span className="font-normal text-zinc-500 dark:text-zinc-400">(opcional)</span>
+                    </span>
+                    <select
+                      name="product_id"
+                      value={addLineProductId}
+                      onChange={(e) => onAddLineProductChange(e.target.value)}
+                      className="rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-50 dark:focus:border-blue-400 dark:focus:ring-blue-400/30"
+                    >
+                      <option value="">— Línea libre (sin catálogo) —</option>
+                      {products.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} · {catalogKindLabel(parseCatalogKind(p.kind))} ·{" "}
+                          {formatMoneyEUR(p.unit_price)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                    Concepto
+                  </p>
+                  <label className="flex flex-col gap-2">
+                    <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                      Descripción <span className="text-red-600 dark:text-red-400">*</span>
+                    </span>
+                    <input
+                      name="description"
+                      required
+                      value={addLineDescription}
+                      onChange={(e) => setAddLineDescription(e.target.value)}
+                      placeholder="Ej. Licencia software, horas de consultoría…"
+                      className="rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 shadow-sm placeholder:text-zinc-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-50 dark:placeholder:text-zinc-500 dark:focus:border-blue-400 dark:focus:ring-blue-400/30"
+                    />
+                  </label>
+                </div>
+
+                <div className="rounded-xl border border-zinc-100 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-950/50">
+                  <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                    Importes e impuestos
+                  </p>
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
                         Cantidad
                       </span>
                       <input
@@ -596,12 +632,12 @@ export function InvoiceDetailForm({
                         value={addLineQuantity}
                         onChange={(e) => setAddLineQuantity(e.target.value)}
                         inputMode="decimal"
-                        className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                        className="rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-sm tabular-nums text-zinc-900 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-50 dark:focus:border-blue-400 dark:focus:ring-blue-400/30"
                       />
                     </label>
-                    <label className="flex flex-col gap-1 text-sm">
-                      <span className="font-medium text-zinc-700 dark:text-zinc-300">
-                        Precio unitario (€) <span className="text-red-600">*</span>
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                        Precio unitario (€) <span className="text-red-600 dark:text-red-400">*</span>
                       </span>
                       <input
                         name="unit_price"
@@ -610,11 +646,11 @@ export function InvoiceDetailForm({
                         onChange={(e) => setAddLineUnitPrice(e.target.value)}
                         inputMode="decimal"
                         placeholder="0,00"
-                        className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                        className="rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-sm tabular-nums text-zinc-900 shadow-sm placeholder:text-zinc-400 transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-50 dark:placeholder:text-zinc-500 dark:focus:border-blue-400 dark:focus:ring-blue-400/30"
                       />
                     </label>
-                    <label className="flex flex-col gap-1 text-sm sm:col-span-2">
-                      <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                    <label className="flex flex-col gap-2 sm:col-span-1">
+                      <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
                         IVA (%)
                       </span>
                       <input
@@ -622,17 +658,21 @@ export function InvoiceDetailForm({
                         value={addLineTaxRate}
                         onChange={(e) => setAddLineTaxRate(e.target.value)}
                         inputMode="decimal"
-                        className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                        className="rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-sm tabular-nums text-zinc-900 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-50 dark:focus:border-blue-400 dark:focus:ring-blue-400/30"
                       />
                     </label>
                   </div>
-                <button
-                  type="submit"
-                  disabled={linePending}
-                  className="inline-flex h-10 max-w-xs items-center justify-center rounded-lg bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
-                >
-                  {linePending ? "Añadiendo…" : "Guardar línea"}
-                </button>
+                </div>
+
+                <div className="flex flex-col gap-3 border-t border-zinc-100 pt-2 dark:border-zinc-800 sm:flex-row sm:items-center sm:justify-end">
+                  <button
+                    type="submit"
+                    disabled={linePending}
+                    className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-blue-600 px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-60 dark:bg-blue-500 dark:hover:bg-blue-400 dark:focus:ring-blue-400 dark:focus:ring-offset-zinc-900 sm:w-auto sm:min-w-[11rem]"
+                  >
+                    {linePending ? "Añadiendo…" : "Guardar línea"}
+                  </button>
+                </div>
               </form>
             </div>
           </div>
