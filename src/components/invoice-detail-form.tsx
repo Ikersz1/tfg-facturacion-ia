@@ -84,6 +84,22 @@ function verifactiQrDataUrl(b64: string): string {
   return `data:image/png;base64,${t}`;
 }
 
+function statusBadgeClass(s: string): string {
+  if (s === "paid") {
+    return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200";
+  }
+  if (s === "overdue") {
+    return "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200";
+  }
+  if (s === "partial" || s === "issued") {
+    return "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200";
+  }
+  if (s === "cancelled") {
+    return "bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-200";
+  }
+  return "bg-zinc-200 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-100";
+}
+
 export function InvoiceDetailForm({
   invoice,
   lines,
@@ -202,9 +218,45 @@ export function InvoiceDetailForm({
     displayStatus === "overdue" ||
     displayStatus === "partial";
 
+  const numberLabel =
+    invoice.number != null
+      ? `${invoice.series}-${invoice.year}/${invoice.number}`
+      : `${invoice.series}-${invoice.year}/borrador`;
+
   return (
     <div className="flex flex-col gap-8">
       <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3 border-b border-zinc-200 pb-4 dark:border-zinc-700">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+              Resumen de factura
+            </p>
+            <p className="mt-1 text-base font-semibold text-zinc-900 dark:text-zinc-50">
+              {numberLabel}
+            </p>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+              {invoice.clients?.name ?? "Cliente"}{" "}
+              {invoice.clients?.tax_id ? `· ${invoice.clients.tax_id}` : ""}
+            </p>
+          </div>
+          <span
+            className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${statusBadgeClass(displayStatus)}`}
+          >
+            {displayStatus === "draft"
+              ? "Borrador"
+              : displayStatus === "issued"
+                ? "Emitida"
+                : displayStatus === "partial"
+                  ? "Parcialmente pagada"
+                  : displayStatus === "paid"
+                    ? "Pagada"
+                    : displayStatus === "overdue"
+                      ? "Vencida"
+                      : displayStatus === "cancelled"
+                        ? "Anulada"
+                        : displayStatus}
+          </span>
+        </div>
         {!isDraft ? (
           <>
             <dl className="grid gap-2 text-sm sm:grid-cols-2">
@@ -220,7 +272,7 @@ export function InvoiceDetailForm({
             <div className="mt-4 border-t border-zinc-200 pt-4 dark:border-zinc-700">
               <a
                 href={`/api/invoices/${invoice.id}/pdf`}
-                className="inline-flex h-9 items-center rounded-lg border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-800 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                className="inline-flex h-9 items-center rounded-lg border border-brand-border bg-brand-soft px-3 text-sm font-medium text-accent hover:bg-brand-soft dark:border-brand-border/70 dark:bg-brand-soft dark:text-accent"
               >
                 Descargar PDF
               </a>
