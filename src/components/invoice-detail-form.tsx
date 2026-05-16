@@ -617,83 +617,96 @@ export function InvoiceDetailForm({
       </div>
 
       {!isDraft ? (
-        <section>
-          <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-            Pagos
-          </h2>
-          <div className="mb-4 flex flex-wrap gap-4 rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm dark:border-zinc-700 dark:bg-zinc-900">
-            <div>
-              <span className="text-zinc-500 dark:text-zinc-400">Cobrado</span>
-              <p className="font-semibold tabular-nums text-zinc-900 dark:text-zinc-50">
+        <section className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/30">
+              <p className="text-xs uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                Pagado
+              </p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums text-emerald-900 dark:text-emerald-100">
                 {formatMoneyEUR(paidSum)}
               </p>
             </div>
-            {displayStatus !== "paid" ? (
-              <div>
-                <span className="text-zinc-500 dark:text-zinc-400">
-                  Pendiente
-                </span>
-                <p className="font-semibold tabular-nums text-amber-800 dark:text-amber-200">
-                  {formatMoneyEUR(Math.max(0, pendingToPay))}
-                </p>
-              </div>
-            ) : null}
-          </div>
-          {payments.length > 0 ? (
-            <div className="mb-4 overflow-x-auto rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
-              <table className="w-full min-w-[28rem] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800">
-                    <th className="px-3 py-2">Fecha</th>
-                    <th className="px-3 py-2 text-right">Importe</th>
-                    <th className="px-3 py-2">Método</th>
-                    <th className="px-3 py-2">Notas</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {payments.map((p) => (
-                    <tr
-                      key={p.id}
-                      className="border-b border-zinc-100 last:border-0 dark:border-zinc-800/80"
-                    >
-                      <td className="px-3 py-2 text-zinc-700 dark:text-zinc-300">
-                        {new Date(p.paid_at).toLocaleString("es-ES", {
-                          dateStyle: "short",
-                          timeStyle: "short",
-                        })}
-                      </td>
-                      <td className="px-3 py-2 text-right font-medium tabular-nums">
-                        {formatMoneyEUR(p.amount)}
-                      </td>
-                      <td className="px-3 py-2 text-zinc-600 dark:text-zinc-400">
-                        {p.method ?? "—"}
-                      </td>
-                      <td className="max-w-[12rem] truncate px-3 py-2 text-zinc-600 dark:text-zinc-400">
-                        {p.notes ?? "—"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/50 dark:bg-amber-950/30">
+              <p className="text-xs uppercase tracking-wide text-amber-700 dark:text-amber-300">
+                Pendiente
+              </p>
+              <p className="mt-1 text-2xl font-semibold tabular-nums text-amber-900 dark:text-amber-100">
+                {formatMoneyEUR(Math.max(0, pendingToPay))}
+              </p>
             </div>
-          ) : (
-            <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
-              Aún no hay cobros registrados.
-            </p>
-          )}
+          </div>
+
+          <div className="rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+            <div className="border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-300">
+                Cobros
+              </h2>
+            </div>
+            {payments.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[28rem] text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800">
+                      <th className="px-3 py-2">Fecha</th>
+                      <th className="px-3 py-2 text-right">Importe</th>
+                      <th className="px-3 py-2">Método</th>
+                      <th className="px-3 py-2">Notas</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {payments.map((p) => (
+                      <tr
+                        key={p.id}
+                        className="border-b border-zinc-100 last:border-0 dark:border-zinc-800/80"
+                      >
+                        <td className="px-3 py-2 text-zinc-700 dark:text-zinc-300">
+                          {new Date(p.paid_at).toLocaleString("es-ES", {
+                            dateStyle: "short",
+                            timeStyle: "short",
+                          })}
+                        </td>
+                        <td className="px-3 py-2 text-right font-medium tabular-nums text-zinc-900 dark:text-zinc-100">
+                          {formatMoneyEUR(p.amount)}
+                        </td>
+                        <td className="px-3 py-2 text-zinc-600 dark:text-zinc-400">
+                          {p.method ?? "—"}
+                        </td>
+                        <td className="max-w-[12rem] truncate px-3 py-2 text-zinc-600 dark:text-zinc-400">
+                          {p.notes ?? "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="px-4 py-5 text-sm text-zinc-500 dark:text-zinc-400">
+                Aún no hay cobros registrados.
+              </p>
+            )}
+          </div>
+
           {canRegisterPayment ? (
             <form
               action={payForm}
               className="flex flex-col gap-4 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900"
             >
-              <h3 className="font-semibold text-zinc-900 dark:text-zinc-50">
-                Registrar cobro
-              </h3>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="font-semibold text-zinc-900 dark:text-zinc-50">
+                  Registrar cobro
+                </h3>
+                {pendingToPay > 0 ? (
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                    Sugerido: {formatMoneyEUR(Math.max(0, pendingToPay))}
+                  </span>
+                ) : null}
+              </div>
               <input type="hidden" name="invoice_id" value={invoice.id} />
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="flex flex-col gap-1 text-sm">
                   <span className="font-medium text-zinc-700 dark:text-zinc-300">
-                    Importe (€) <span className="text-red-600">*</span>
+                    Importe cobrado (€) <span className="text-red-600">*</span>
                   </span>
                   <input
                     name="amount"
@@ -702,9 +715,9 @@ export function InvoiceDetailForm({
                     placeholder={
                       pendingToPay > 0
                         ? pendingToPay.toFixed(2)
-                        : undefined
+                        : "0,00"
                     }
-                    className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                    className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
                   />
                 </label>
                 <label className="flex flex-col gap-1 text-sm">
@@ -714,25 +727,27 @@ export function InvoiceDetailForm({
                   <input
                     type="datetime-local"
                     name="paid_at"
-                    className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                    className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
                   />
                 </label>
-                <label className="flex flex-col gap-1 text-sm sm:col-span-2">
+                <label className="flex flex-col gap-1 text-sm">
                   <span className="font-medium text-zinc-700 dark:text-zinc-300">
-                    Método (transferencia, tarjeta…)
+                    Método de cobro
                   </span>
                   <input
                     name="method"
-                    className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                    placeholder="Transferencia, tarjeta, efectivo..."
+                    className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
                   />
                 </label>
-                <label className="flex flex-col gap-1 text-sm sm:col-span-2">
+                <label className="flex flex-col gap-1 text-sm">
                   <span className="font-medium text-zinc-700 dark:text-zinc-300">
                     Notas
                   </span>
                   <input
                     name="notes"
-                    className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                    placeholder="Referencia, banco, observaciones..."
+                    className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
                   />
                 </label>
               </div>
@@ -746,7 +761,7 @@ export function InvoiceDetailForm({
                 disabled={payPending}
                 className="inline-flex h-10 max-w-xs items-center justify-center rounded-lg bg-brand px-4 text-sm font-medium text-brand-fg hover:bg-brand-hover disabled:opacity-60"
               >
-                {payPending ? "Guardando…" : "Registrar pago"}
+                {payPending ? "Guardando cobro..." : "Guardar cobro"}
               </button>
             </form>
           ) : null}
