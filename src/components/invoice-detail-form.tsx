@@ -100,6 +100,16 @@ function statusBadgeClass(s: string): string {
   return "bg-zinc-200 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-100";
 }
 
+function isVerifactiConfirmed(estado?: string | null): boolean {
+  const s = (estado ?? "").toLowerCase();
+  return (
+    s.includes("confirmad") ||
+    s.includes("aceptad") ||
+    s.includes("registrad") ||
+    s.includes("encontrad")
+  );
+}
+
 export function InvoiceDetailForm({
   invoice,
   lines,
@@ -298,9 +308,18 @@ export function InvoiceDetailForm({
             {invoice.verifacti_registro_estado ? (
               <div>
                 <dt className="text-zinc-500">Estado registro</dt>
-                <dd className="font-medium text-zinc-900 dark:text-zinc-100">
-                  {invoice.verifacti_registro_estado}
-                </dd>
+                {isVerifactiConfirmed(invoice.verifacti_registro_estado) ? (
+                  <dd className="flex items-center gap-2 font-medium text-emerald-800 dark:text-emerald-200">
+                    <span>{invoice.verifacti_registro_estado}</span>
+                    <span className="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">
+                      Confirmada
+                    </span>
+                  </dd>
+                ) : (
+                  <dd className="font-medium text-zinc-900 dark:text-zinc-100">
+                    {invoice.verifacti_registro_estado}
+                  </dd>
+                )}
               </div>
             ) : null}
             {invoice.verifacti_uuid ? (
@@ -309,6 +328,14 @@ export function InvoiceDetailForm({
                 <dd className="break-all font-mono text-xs text-zinc-800 dark:text-zinc-200">
                   {invoice.verifacti_uuid}
                 </dd>
+                <a
+                  href={`https://www.verifacti.com/?uuid=${encodeURIComponent(invoice.verifacti_uuid)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-1 inline-flex text-xs font-medium text-accent underline underline-offset-2 hover:text-accent-hover"
+                >
+                  Abrir enlace Verifacti
+                </a>
               </div>
             ) : null}
             {invoice.verifacti_last_error ? (
@@ -637,14 +664,12 @@ export function InvoiceDetailForm({
             </div>
           </div>
 
-          <div className="rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
-            <div className="border-b border-zinc-200 px-4 py-3 dark:border-zinc-700">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-600 dark:text-zinc-300">
-                Cobros
-              </h2>
-            </div>
+          <div>
+            <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+              Cobros
+            </h2>
             {payments.length > 0 ? (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
                 <table className="w-full min-w-[28rem] text-left text-sm">
                   <thead>
                     <tr className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800">
@@ -681,7 +706,7 @@ export function InvoiceDetailForm({
                 </table>
               </div>
             ) : (
-              <p className="px-4 py-5 text-sm text-zinc-500 dark:text-zinc-400">
+              <p className="rounded-xl border border-dashed border-zinc-300 px-4 py-8 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
                 Aún no hay cobros registrados.
               </p>
             )}
@@ -690,7 +715,7 @@ export function InvoiceDetailForm({
           {canRegisterPayment ? (
             <form
               action={payForm}
-              className="flex flex-col gap-4 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900"
+              className="flex flex-col gap-4 rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="font-semibold text-zinc-900 dark:text-zinc-50">
@@ -824,11 +849,6 @@ export function InvoiceDetailForm({
         </form>
       ) : null}
 
-      <p className="text-center text-sm text-zinc-500">
-        <Link href="/invoices" className="text-accent hover:text-accent-hover hover:underline">
-          ← Volver al listado
-        </Link>
-      </p>
     </div>
   );
 }
