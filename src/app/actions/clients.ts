@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { requireAuthUserId } from "@/lib/supabase/require-auth-user";
+import { parseClientKind } from "@/lib/client-kind";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -16,9 +17,16 @@ export async function createClientAction(
     return { error: "El nombre es obligatorio." };
   }
 
+  const kind = parseClientKind(formData.get("kind")?.toString());
+
   const tax_id = formData.get("tax_id")?.toString().trim();
   if (!tax_id) {
-    return { error: "El NIF/CIF es obligatorio para facturas completas." };
+    return {
+      error:
+        kind === "individual"
+          ? "El DNI/NIE es obligatorio para facturas completas."
+          : "El CIF es obligatorio para facturas completas.",
+    };
   }
 
   const address = formData.get("address")?.toString().trim();
@@ -32,6 +40,7 @@ export async function createClientAction(
 
   const { error } = await supabase.from("clients").insert({
     user_id: auth.userId,
+    kind,
     name,
     tax_id,
     address,
@@ -45,7 +54,7 @@ export async function createClientAction(
   }
 
   revalidatePath("/clients");
-  redirect("/clients");
+  redirect(`/clients?kind=${kind}`);
 }
 
 export async function updateClientAction(
@@ -58,9 +67,16 @@ export async function updateClientAction(
   const name = formData.get("name")?.toString().trim();
   if (!name) return { error: "El nombre es obligatorio." };
 
+  const kind = parseClientKind(formData.get("kind")?.toString());
+
   const tax_id = formData.get("tax_id")?.toString().trim();
   if (!tax_id) {
-    return { error: "El NIF/CIF es obligatorio para facturas completas." };
+    return {
+      error:
+        kind === "individual"
+          ? "El DNI/NIE es obligatorio para facturas completas."
+          : "El CIF es obligatorio para facturas completas.",
+    };
   }
 
   const address = formData.get("address")?.toString().trim();
@@ -75,6 +91,7 @@ export async function updateClientAction(
   const { error } = await supabase
     .from("clients")
     .update({
+      kind,
       name,
       tax_id,
       address,

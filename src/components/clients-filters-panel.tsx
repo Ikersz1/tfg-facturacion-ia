@@ -29,11 +29,13 @@ export function ClientsFiltersPanel({ actionSlot }: { actionSlot?: ReactNode }) 
 
   const commit = useCallback(
     (patch: Partial<{ q: string; sort: string }>) => {
+      const kind = searchParams.get("kind") ?? "company";
       const q = searchParams.get("q") ?? "";
       const sort = searchParams.get("sort") ?? "";
       const merged = { q, sort, ...patch };
       router.replace(
         buildClientsListUrl({
+          kind: kind === "individual" ? "individual" : "company",
           q: merged.q.trim() || undefined,
           sort: merged.sort || undefined,
         }),
@@ -105,7 +107,12 @@ export function ClientsFiltersPanel({ actionSlot }: { actionSlot?: ReactNode }) 
           {hasActiveFilters ? (
             <div className="flex items-end pb-0.5">
               <Link
-                href="/clients"
+                href={buildClientsListUrl({
+                  kind:
+                    searchParams.get("kind") === "individual"
+                      ? "individual"
+                      : "company",
+                })}
                 className="group inline-flex h-10 items-center gap-2 rounded-md border border-zinc-200 bg-white px-3.5 text-sm font-medium text-zinc-600 shadow-sm outline-none transition hover:border-brand-border hover:bg-brand-soft hover:text-accent focus-visible:ring-2 focus-visible:ring-brand/30 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300 dark:shadow-none dark:hover:border-brand-border dark:hover:bg-brand-soft dark:hover:text-accent dark:focus-visible:ring-brand/35 dark:focus-visible:ring-offset-zinc-900"
                 title="Quitar todos los filtros"
               >

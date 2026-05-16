@@ -2,6 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ClientEditForm } from "@/components/client-edit-form";
 import { PageHeader } from "@/components/page-header";
+import {
+  clientKindLabel,
+  clientNameLabel,
+  clientTaxIdLabel,
+  parseClientKind,
+} from "@/lib/client-kind";
 import { effectiveInvoiceStatus } from "@/lib/invoice-status";
 import { formatMoneyEUR, roundCurrencyEUR } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
@@ -33,13 +39,15 @@ export default async function ClientDetailPage({ params, searchParams }: PagePro
 
   const { data: client, error: cErr } = await supabase
     .from("clients")
-    .select("id, name, tax_id, email, phone, address, notes, created_at")
+    .select("id, name, tax_id, email, phone, address, notes, kind, created_at")
     .eq("id", id)
     .maybeSingle();
 
   if (cErr || !client) {
     notFound();
   }
+
+  const clientKind = parseClientKind(client.kind as string | null);
 
   const { data: invoices } = await supabase
     .from("invoices")
@@ -98,11 +106,21 @@ export default async function ClientDetailPage({ params, searchParams }: PagePro
         <div className="grid gap-6 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 sm:grid-cols-2">
           <dl className="space-y-2 text-sm">
             <div>
-              <dt className="text-zinc-500 dark:text-zinc-400">Nombre</dt>
+              <dt className="text-zinc-500 dark:text-zinc-400">Tipo</dt>
+              <dd className="text-zinc-900 dark:text-zinc-50">
+                {clientKindLabel(clientKind)}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-zinc-500 dark:text-zinc-400">
+                {clientNameLabel(clientKind)}
+              </dt>
               <dd className="text-zinc-900 dark:text-zinc-50">{client.name}</dd>
             </div>
             <div>
-              <dt className="text-zinc-500 dark:text-zinc-400">NIF/CIF</dt>
+              <dt className="text-zinc-500 dark:text-zinc-400">
+                {clientTaxIdLabel(clientKind)}
+              </dt>
               <dd className="text-zinc-900 dark:text-zinc-50">{client.tax_id ?? "—"}</dd>
             </div>
             <div>

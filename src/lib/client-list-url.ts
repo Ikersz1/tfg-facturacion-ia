@@ -1,3 +1,5 @@
+import type { ClientKind } from "@/lib/client-kind";
+
 /** Construye query string para /clients omitiendo valores vacíos. */
 export function buildClientsListUrl(
   params: Record<string, string | undefined>,
@@ -11,6 +13,8 @@ export function buildClientsListUrl(
 }
 
 export type ClientListFilters = {
+  /** Pestaña activa: empresas o particulares */
+  kind?: ClientKind;
   /** Búsqueda en nombre, NIF, email, teléfono (coincidencia parcial, sin distinguir mayúsculas) */
   q?: string;
   /** Por defecto: más recientes primero (sin parámetro en URL) */
@@ -27,7 +31,11 @@ export function parseClientListSearch(
   const sortRaw = g("sort");
   const sort =
     sortRaw === "name_asc" || sortRaw === "name_desc" ? sortRaw : undefined;
+  const kindRaw = g("kind");
+  const kind: ClientKind | undefined =
+    kindRaw === "individual" || kindRaw === "company" ? kindRaw : undefined;
   return {
+    kind: kind ?? "company",
     q: g("q"),
     sort,
   };
