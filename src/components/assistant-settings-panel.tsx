@@ -62,6 +62,7 @@ export function AssistantSettingsPanel({ openAiEnabled }: { openAiEnabled: boole
           <li>Cliente moroso, mejor cliente, resumen y última factura</li>
           <li>Facturas vencidas, pendientes o que vencen pronto</li>
           <li>Comparar facturación entre meses</li>
+          <li>Registrar cobros: «he cobrado X de [cliente]» y elegir factura</li>
           <li>Borrador de recordatorio de cobro (copiar y enviar)</li>
           <li>Resumen del mes o trimestre; abrir listados filtrados</li>
         </ul>

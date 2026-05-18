@@ -150,6 +150,23 @@ export const ASSISTANT_OPENAI_TOOLS = [
   {
     type: "function" as const,
     function: {
+      name: "prepare_register_payment",
+      description:
+        "Iniciar registro de un cobro recibido: importe y nombre de cliente. El usuario elegirá después la factura (emitida, parcial o vencida).",
+      parameters: {
+        type: "object",
+        properties: {
+          clientName: { type: "string", description: "Nombre del cliente" },
+          amountEur: { type: "number", description: "Importe cobrado en euros" },
+        },
+        required: ["clientName", "amountEur"],
+        additionalProperties: false,
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
       name: "list_clients",
       description:
         "Listar clientes o contar cuántos hay. Para «cuántos clientes tengo» usar countOnly: true.",

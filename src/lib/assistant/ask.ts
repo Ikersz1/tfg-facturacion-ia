@@ -8,12 +8,22 @@ import {
 } from "@/lib/assistant/match-intent";
 import { pickToolWithOpenAI, polishAnswerWithOpenAI } from "@/lib/assistant/openai";
 import {
+  handlePaymentFollowUp,
+  prepareRegisterPayment,
+} from "@/lib/assistant/payment-flow";
+import { parseRegisterPaymentIntent } from "@/lib/assistant/parse-payment-intent";
+import {
   executeAssistantTool,
   formatToolResultAsText,
 } from "@/lib/assistant/tools";
-import type { AssistantReply } from "@/lib/assistant/types";
+import type { AssistantReply, AssistantSessionContext } from "@/lib/assistant/types";
 
-export async function askAssistant(question: string): Promise<AssistantReply> {
+const PAYMENT_TOOLS = new Set(["prepare_register_payment"]);
+
+export async function askAssistant(
+  question: string,
+  session?: AssistantSessionContext,
+): Promise<AssistantReply> {
   const q = question.trim();
   if (!q) {
     return { text: "Escribe una pregunta sobre tus facturas o clientes.", links: [] };
@@ -40,6 +50,16 @@ export async function askAssistant(question: string): Promise<AssistantReply> {
   }
   const { ctx } = loaded;
 
+  if (session?.pendingPayment) {
+    const followUp = await handlePaymentFollowUp(q, session.pendingPayment, ctx);
+    if (followUp) return followUp;
+  }
+
+  const payIntent = parseRegisterPaymentIntent(q);
+  if (payIntent) {
+    return prepareRegisterPayment(ctx, payIntent.amountEur, payIntent.clientName);
+  }
+
   let toolCall = matchAssistantIntent(q);
   let usedLlmRouter = false;
 
@@ -63,11 +83,25 @@ export async function askAssistant(question: string): Promise<AssistantReply> {
     };
   }
 
+  if (toolCall.name === "prepare_register_payment") {
+    const amountEur = Number(toolCall.args.amountEur);
+    const clientName = String(toolCall.args.clientName ?? "");
+    if (!Number.isFinite(amountEur) || amountEur <= 0 || !clientName.trim()) {
+      return {
+        text: "Indica importe y cliente, por ejemplo: «he cobrado 150 de Acme SL».",
+        links: [],
+      };
+    }
+    return prepareRegisterPayment(ctx, amountEur, clientName);
+  }
+
   const result = executeAssistantTool(toolCall.name, toolCall.args, ctx);
 
-  let text =
-    (await polishAnswerWithOpenAI(q, toolCall.name, result.payload)) ??
-    formatToolResultAsText(toolCall.name, result);
+  const skipPolish = PAYMENT_TOOLS.has(toolCall.name);
+  let text = skipPolish
+    ? formatToolResultAsText(toolCall.name, result)
+    : ((await polishAnswerWithOpenAI(q, toolCall.name, result.payload)) ??
+      formatToolResultAsText(toolCall.name, result));
 
   const uniqueLinks = dedupeLinks(result.links);
 

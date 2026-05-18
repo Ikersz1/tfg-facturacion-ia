@@ -5,10 +5,11 @@ import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { assistantAskAction, type AssistantActionState } from "@/app/actions/assistant";
 import {
   clearAssistantChatHistory,
-  loadAssistantChatHistory,
-  saveAssistantChatHistory,
+  loadAssistantChatSnapshot,
+  saveAssistantChatSnapshot,
   type StoredChatEntry,
 } from "@/lib/assistant/chat-storage";
+import type { PaymentChoice, PendingPaymentSession } from "@/lib/assistant/types";
 
 const initial: AssistantActionState = {};
 
@@ -35,6 +36,8 @@ export function AssistantChat({
   const isSidebar = mode === "sidebar";
   const [state, formAction, isPending] = useActionState(assistantAskAction, initial);
   const [history, setHistory] = useState<ChatEntry[]>([]);
+  const [pendingPayment, setPendingPayment] = useState<PendingPaymentSession | null>(null);
+  const [paymentChoices, setPaymentChoices] = useState<PaymentChoice[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [draft, setDraft] = useState("");
   const [listening, setListening] = useState(false);
@@ -55,18 +58,24 @@ export function AssistantChat({
   );
 
   useEffect(() => {
-    setHistory(loadAssistantChatHistory());
+    const snap = loadAssistantChatSnapshot();
+    setHistory(snap.history);
+    setPendingPayment(snap.pendingPayment ?? null);
     setHydrated(true);
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
-    saveAssistantChatHistory(history);
-  }, [history, hydrated]);
+    saveAssistantChatSnapshot({ history, pendingPayment });
+  }, [history, pendingPayment, hydrated]);
 
   useEffect(() => {
     if (!state.ok || !state.text) return;
     const assistantText = state.text;
+    if (state.pendingPayment !== undefined) {
+      setPendingPayment(state.pendingPayment);
+    }
+    setPaymentChoices(state.paymentChoices ?? []);
     setHistory((h) => [
       ...h,
       {
@@ -76,7 +85,7 @@ export function AssistantChat({
         links: state.links,
       },
     ]);
-  }, [state.ok, state.text, state.links]);
+  }, [state.ok, state.text, state.links, state.pendingPayment, state.paymentChoices]);
 
   useEffect(() => {
     const box = messagesRef.current;
@@ -110,6 +119,8 @@ export function AssistantChat({
   function clearConversation() {
     clearAssistantChatHistory();
     setHistory([]);
+    setPendingPayment(null);
+    setPaymentChoices([]);
     setDraft("");
     initialSent.current = false;
   }
@@ -160,7 +171,10 @@ export function AssistantChat({
       }`}
     >
       {history.length > 0 && isSidebar ? (
-        <div className="mb-2 flex justify-end">
+        <div className="mb-2 flex justify-end gap-3">
+          {pendingPayment ? (
+            <span className="text-xs text-amber-700 dark:text-amber-300">Cobro pendiente de confirmar</span>
+          ) : null}
           <button
             type="button"
             onClick={clearConversation}
@@ -312,6 +326,38 @@ export function AssistantChat({
     </div>
   );
 
+  const paymentPicker =
+    paymentChoices.length > 0 ? (
+      <div
+        className={`flex flex-wrap gap-2 border-t border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900 ${
+          isSidebar ? "px-5 py-3" : "p-3"
+        }`}
+      >
+        <p className="w-full text-xs font-medium text-zinc-500 dark:text-zinc-400">
+          Elige factura para el cobro:
+        </p>
+        {paymentChoices.map((c) => (
+          <button
+            key={c.invoiceId}
+            type="button"
+            disabled={isPending}
+            onClick={() => submitQuestion(String(c.index))}
+            className="rounded-lg border border-brand/30 bg-brand-soft/50 px-3 py-1.5 text-xs font-semibold text-zinc-800 transition hover:bg-brand-soft dark:border-brand/40 dark:text-zinc-100"
+          >
+            {c.label}
+          </button>
+        ))}
+        <button
+          type="button"
+          disabled={isPending}
+          onClick={() => submitQuestion("cancelar")}
+          className="rounded-lg px-2 py-1.5 text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+        >
+          Cancelar
+        </button>
+      </div>
+    ) : null;
+
   const inputArea = (
     <form
       ref={formRef}
@@ -333,6 +379,12 @@ export function AssistantChat({
         });
       }}
     >
+      <input
+        type="hidden"
+        name="context"
+        value={JSON.stringify({ pendingPayment })}
+        readOnly
+      />
       <label htmlFor={`assistant-q-${mode}`} className="sr-only">
         Pregunta
       </label>
@@ -396,6 +448,7 @@ export function AssistantChat({
     return (
       <div className="flex h-full min-h-0 flex-col">
         {messagesArea}
+        {paymentPicker}
         {inputArea}
       </div>
     );
@@ -411,6 +464,7 @@ export function AssistantChat({
         </span>
       </div>
       {messagesArea}
+      {paymentPicker}
       {inputArea}
       <div className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/70">
         <p className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500">Preguntas sugeridas</p>

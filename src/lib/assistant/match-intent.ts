@@ -1,3 +1,4 @@
+import { parseRegisterPaymentIntent } from "@/lib/assistant/parse-payment-intent";
 import type { ToolCall, ToolName } from "@/lib/assistant/types";
 
 export const ASSISTANT_HELP_TEXT = `Puedo ayudarte a consultar tu facturación (no creo ni emito facturas):
@@ -9,6 +10,7 @@ export const ASSISTANT_HELP_TEXT = `Puedo ayudarte a consultar tu facturación (
 · Comparar facturación de este mes con el mes pasado
 · Resumen del mes o trimestre
 · Abrir listados filtrados de facturas o clientes
+· Registrar un cobro: «he cobrado 100 de [cliente]» (luego eliges la factura)
 
 Pregunta en una frase corta.`;
 
@@ -74,6 +76,14 @@ export function matchAssistantIntent(question: string): ToolCall | null {
   if (!q) return null;
 
   const clientName = extractClientName(question);
+
+  const payIntent = parseRegisterPaymentIntent(question);
+  if (payIntent) {
+    return {
+      name: "prepare_register_payment",
+      args: { clientName: payIntent.clientName, amountEur: payIntent.amountEur },
+    };
+  }
 
   if (/últim[ao] factura|ultima factura|factura más reciente|factura mas reciente/i.test(q)) {
     if (clientName) return { name: "get_client_last_invoice", args: { clientName } };
@@ -222,6 +232,7 @@ export function isToolName(name: string): name is ToolName {
     "get_invoices_due_soon",
     "compare_billing_periods",
     "draft_payment_reminder",
+    "prepare_register_payment",
     "list_clients",
     "open_filtered_view",
   ].includes(name);

@@ -14,6 +14,7 @@ Reglas de enrutado:
 - get_invoices_due_soon: facturas que vencen pronto o esta semana.
 - compare_billing_periods: comparar facturación entre meses.
 - draft_payment_reminder: texto de recordatorio de cobro (requiere clientName).
+- prepare_register_payment: el usuario ha cobrado un importe de un cliente (he cobrado X de…).
 - list_clients con countOnly true: «cuántos clientes tengo», total de clientes.
 - list_clients sin countOnly: listar o buscar clientes por nombre.
 - open_filtered_view: view invoices o clients con filtros.

@@ -108,7 +108,7 @@ export default async function ClientDetailPage({ params, searchParams }: PagePro
           source="client-detail"
           questions={[
             `¿Cuánto debe ${client.name}?`,
-            `¿Cuál es la última factura de ${client.name}?`,
+            `He cobrado 100 de ${client.name}`,
             `Genera un recordatorio de cobro para ${client.name}`,
           ]}
         />
