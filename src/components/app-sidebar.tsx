@@ -41,7 +41,7 @@ const SECTIONS: { title: string; items: NavItem[] }[] = [
   },
   {
     title: "IA",
-    items: [{ label: "Asistente", soon: true, icon: "spark" }],
+    items: [{ label: "Asistente", href: "/asistente", icon: "spark" }],
   },
   {
     title: "Cuenta",

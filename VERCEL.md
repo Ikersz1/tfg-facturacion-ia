@@ -15,6 +15,9 @@ En el proyecto Vercel: **Settings → Environment Variables**, añade las mismas
 | `SUPABASE_SERVICE_ROLE_KEY` | Opcional en local | **Obligatoria en Vercel** si activas el cron de estado Verifacti (usa cliente admin para leer/actualizar facturas sin sesión). El panel sigue usando solo `anon` + JWT. |
 | `VERIFACTI_NIF_API_KEY` | Opcional | Clave NIF Verifacti (`vf_test_…` / `vf_prod_…`). |
 | `CRON_SECRET` | Opcional | Secreto largo aleatorio. Si está definido en Vercel, las invocaciones programadas de `/api/cron/verifacti-status` llevan `Authorization: Bearer <CRON_SECRET>`; la ruta rechaza peticiones sin coincidencia. |
+| `OPENAI_API_KEY` | Opcional | Asistente en `/asistente`: enrutado de preguntas y redacción. Sin ella, el asistente usa reglas locales. |
+| `OPENAI_MODEL` | Opcional | Por defecto `gpt-4o-mini`. |
+| `ASSISTANT_SKIP_POLISH` | Opcional | Si es `1`, no se llama al LLM para redactar (solo datos + plantillas). |
 
 El archivo `vercel.json` define un cron **una vez al día** (`0 6 * * *` → ~06:00 UTC; en Hobby la hora real puede variar ±59 min según [Vercel](https://vercel.com/docs/cron-jobs/usage-and-pricing)) contra `/api/cron/verifacti-status`, compatible con el plan **Hobby** (máximo una ejecución diaria). En **Pro** puedes acortar el intervalo si lo necesitas.
 
