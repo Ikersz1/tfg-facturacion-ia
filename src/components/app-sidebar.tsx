@@ -40,10 +40,6 @@ const SECTIONS: { title: string; items: NavItem[] }[] = [
     items: [{ label: "Integraciones (n8n)", soon: true, icon: "zap" }],
   },
   {
-    title: "IA",
-    items: [{ label: "Asistente", href: "/asistente", icon: "spark" }],
-  },
-  {
     title: "Cuenta",
     items: [{ label: "Ajustes", href: "/settings/fiscal", icon: "settings" }],
   },
@@ -108,6 +104,9 @@ function Icon({ name }: { name: NavItem["icon"] }) {
 
 function isActive(pathname: string, href: string): boolean {
   if (href === "/") return pathname === "/";
+  if (href === "/settings/fiscal") {
+    return pathname === href || pathname.startsWith("/settings/");
+  }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 

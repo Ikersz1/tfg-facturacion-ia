@@ -3,22 +3,23 @@
 import Link from "next/link";
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { assistantAskAction, type AssistantActionState } from "@/app/actions/assistant";
+import {
+  clearAssistantChatHistory,
+  loadAssistantChatHistory,
+  saveAssistantChatHistory,
+  type StoredChatEntry,
+} from "@/lib/assistant/chat-storage";
 
 const initial: AssistantActionState = {};
 
 const DEFAULT_SUGGESTIONS = [
   "¿Qué cliente me debe más dinero?",
-  "Resume mi facturación de este mes",
-  "¿Cuáles son mis facturas vencidas?",
-  "Lista mis clientes",
+  "Facturas que vencen esta semana",
+  "Compara mi facturación con el mes pasado",
+  "¿Cuántos clientes tengo?",
 ];
 
-type ChatEntry = {
-  id: string;
-  role: "user" | "assistant";
-  text: string;
-  links?: { label: string; href: string }[];
-};
+type ChatEntry = StoredChatEntry;
 
 export function AssistantChat({
   suggestions,
@@ -34,14 +35,34 @@ export function AssistantChat({
   const isSidebar = mode === "sidebar";
   const [state, formAction, isPending] = useActionState(assistantAskAction, initial);
   const [history, setHistory] = useState<ChatEntry[]>([]);
+  const [hydrated, setHydrated] = useState(false);
   const [draft, setDraft] = useState("");
+  const [listening, setListening] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const initialSent = useRef(false);
+  const speechSupported = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    const w = window as Window & {
+      SpeechRecognition?: new () => { start(): void };
+      webkitSpeechRecognition?: new () => { start(): void };
+    };
+    return Boolean(w.SpeechRecognition ?? w.webkitSpeechRecognition);
+  }, []);
   const options = useMemo(
     () => (suggestions && suggestions.length > 0 ? suggestions : DEFAULT_SUGGESTIONS),
     [suggestions],
   );
+
+  useEffect(() => {
+    setHistory(loadAssistantChatHistory());
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    saveAssistantChatHistory(history);
+  }, [history, hydrated]);
 
   useEffect(() => {
     if (!state.ok || !state.text) return;
@@ -64,14 +85,19 @@ export function AssistantChat({
   }, [history, isPending]);
 
   useEffect(() => {
-    if (!initialQuestion?.trim() || initialSent.current) return;
+    if (!hydrated || !initialQuestion?.trim() || initialSent.current) return;
+    if (history.length > 0) {
+      initialSent.current = true;
+      onInitialQuestionConsumed?.();
+      return;
+    }
     initialSent.current = true;
     const q = initialQuestion.trim();
     setDraft(q);
     setHistory([{ id: `u-init`, role: "user", text: q }]);
     requestAnimationFrame(() => formRef.current?.requestSubmit());
     onInitialQuestionConsumed?.();
-  }, [initialQuestion, onInitialQuestionConsumed]);
+  }, [hydrated, initialQuestion, history.length, onInitialQuestionConsumed]);
 
   function submitQuestion(question: string) {
     const q = question.trim();
@@ -81,6 +107,51 @@ export function AssistantChat({
     requestAnimationFrame(() => formRef.current?.requestSubmit());
   }
 
+  function clearConversation() {
+    clearAssistantChatHistory();
+    setHistory([]);
+    setDraft("");
+    initialSent.current = false;
+  }
+
+  function startVoiceInput() {
+    if (!speechSupported || listening) return;
+    const w = window as Window & {
+      SpeechRecognition?: new () => {
+        lang: string;
+        interimResults: boolean;
+        maxAlternatives: number;
+        onresult: ((event: { results: { [key: number]: { [key: number]: { transcript?: string } } } }) => void) | null;
+        onerror: (() => void) | null;
+        onend: (() => void) | null;
+        start(): void;
+      };
+      webkitSpeechRecognition?: new () => {
+        lang: string;
+        interimResults: boolean;
+        maxAlternatives: number;
+        onresult: ((event: { results: { [key: number]: { [key: number]: { transcript?: string } } } }) => void) | null;
+        onerror: (() => void) | null;
+        onend: (() => void) | null;
+        start(): void;
+      };
+    };
+    const Ctor = w.SpeechRecognition ?? w.webkitSpeechRecognition;
+    if (!Ctor) return;
+    const rec = new Ctor();
+    rec.lang = "es-ES";
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+    setListening(true);
+    rec.onresult = (event) => {
+      const text = event.results[0]?.[0]?.transcript?.trim();
+      if (text) setDraft(text);
+    };
+    rec.onerror = () => setListening(false);
+    rec.onend = () => setListening(false);
+    rec.start();
+  }
+
   const messagesArea = (
     <div
       ref={messagesRef}
@@ -88,6 +159,17 @@ export function AssistantChat({
         isSidebar ? "bg-zinc-50/80 px-5 py-4 dark:bg-zinc-950/50" : "max-h-[30rem] pr-1"
       }`}
     >
+      {history.length > 0 && isSidebar ? (
+        <div className="mb-2 flex justify-end">
+          <button
+            type="button"
+            onClick={clearConversation}
+            className="text-xs font-medium text-zinc-500 underline-offset-2 hover:text-zinc-700 hover:underline dark:text-zinc-400 dark:hover:text-zinc-200"
+          >
+            Borrar conversación
+          </button>
+        </div>
+      ) : null}
       {history.length === 0 && !isPending ? (
         <div className="py-4 text-center">
           <div
@@ -268,6 +350,29 @@ export function AssistantChat({
           }`}
           autoComplete="off"
         />
+        {speechSupported ? (
+          <button
+            type="button"
+            disabled={isPending}
+            onClick={startVoiceInput}
+            className={`inline-flex shrink-0 items-center justify-center rounded-xl border p-3 transition disabled:opacity-40 ${
+              listening
+                ? "border-brand bg-brand-soft text-brand dark:text-accent"
+                : "border-zinc-200 bg-zinc-50 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-300"
+            }`}
+            aria-label="Dictar pregunta"
+            title="Dictar pregunta"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"
+              />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3" />
+            </svg>
+          </button>
+        ) : null}
         <button
           type="submit"
           disabled={isPending || !draft.trim()}

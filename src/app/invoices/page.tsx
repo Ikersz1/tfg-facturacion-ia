@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { AssistantContextualCta } from "@/components/assistant-contextual-cta";
 import { InvoicesFiltersPanel } from "@/components/invoices-filters-panel";
 import { InvoicesVerifactuBulkButton } from "@/components/invoices-verifactu-bulk-button";
 import { PageHeader } from "@/components/page-header";
@@ -182,6 +183,16 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
           }
         />
       </Suspense>
+
+      <AssistantContextualCta
+        source="invoices-list"
+        questions={[
+          "¿Cuáles son mis facturas vencidas?",
+          "Facturas que vencen esta semana",
+          "Abrir facturas pendientes",
+          "Compara mi facturación con el mes pasado",
+        ]}
+      />
 
       {error ? (
         <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">

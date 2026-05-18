@@ -1,20 +1,17 @@
 import "server-only";
 
 import { loadAssistantContext } from "@/lib/assistant/context";
-import { matchAssistantIntent } from "@/lib/assistant/match-intent";
+import {
+  ASSISTANT_HELP_TEXT,
+  matchAssistantIntent,
+  matchAssistantMeta,
+} from "@/lib/assistant/match-intent";
 import { pickToolWithOpenAI, polishAnswerWithOpenAI } from "@/lib/assistant/openai";
 import {
   executeAssistantTool,
   formatToolResultAsText,
 } from "@/lib/assistant/tools";
 import type { AssistantReply } from "@/lib/assistant/types";
-
-const HELP_TEXT = `Puedo ayudarte con preguntas como:
-· ¿Qué cliente me debe más?
-· ¿Cuántas facturas tiene [nombre cliente]?
-· ¿Cuál es la última factura de [cliente]?
-· Resume mi facturación del trimestre
-· Lista mis clientes que contengan "…"`;
 
 export async function askAssistant(question: string): Promise<AssistantReply> {
   const q = question.trim();
@@ -24,6 +21,17 @@ export async function askAssistant(question: string): Promise<AssistantReply> {
 
   if (q.length > 500) {
     return { text: "La pregunta es demasiado larga (máx. 500 caracteres).", links: [] };
+  }
+
+  const meta = matchAssistantMeta(q);
+  if (meta) {
+    return {
+      text: meta,
+      links: [
+        { label: "Ver clientes", href: "/clients" },
+        { label: "Ver facturas", href: "/invoices" },
+      ],
+    };
   }
 
   const loaded = await loadAssistantContext();
@@ -46,7 +54,13 @@ export async function askAssistant(question: string): Promise<AssistantReply> {
   }
 
   if (!toolCall) {
-    return { text: HELP_TEXT, links: [{ label: "Ver facturas", href: "/invoices" }] };
+    return {
+      text: ASSISTANT_HELP_TEXT,
+      links: [
+        { label: "Ver clientes", href: "/clients" },
+        { label: "Ver facturas", href: "/invoices" },
+      ],
+    };
   }
 
   const result = executeAssistantTool(toolCall.name, toolCall.args, ctx);

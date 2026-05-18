@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { AssistantContextualCta } from "@/components/assistant-contextual-cta";
 import { ClientEditForm } from "@/components/client-edit-form";
 import { PageHeader } from "@/components/page-header";
 import {
@@ -102,6 +103,15 @@ export default async function ClientDetailPage({ params, searchParams }: PagePro
             </Link>
           )}
         </div>
+
+        <AssistantContextualCta
+          source="client-detail"
+          questions={[
+            `¿Cuánto debe ${client.name}?`,
+            `¿Cuál es la última factura de ${client.name}?`,
+            `Genera un recordatorio de cobro para ${client.name}`,
+          ]}
+        />
 
         <div className="grid gap-6 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 sm:grid-cols-2">
           <dl className="space-y-2 text-sm">

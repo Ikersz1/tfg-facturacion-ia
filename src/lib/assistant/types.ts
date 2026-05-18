@@ -12,10 +12,14 @@ export type AssistantReply = {
 
 export type ToolName =
   | "get_top_debtors"
+  | "get_top_clients_by_billing"
   | "get_client_summary"
   | "get_client_last_invoice"
   | "search_invoices"
   | "get_billing_summary"
+  | "get_invoices_due_soon"
+  | "compare_billing_periods"
+  | "draft_payment_reminder"
   | "list_clients"
   | "open_filtered_view";
 

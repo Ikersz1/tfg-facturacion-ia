@@ -3,7 +3,9 @@ import "server-only";
 import type { AssistantContext, AssistantInvoice } from "@/lib/assistant/context";
 import { findClientsByQuery, resolveClient } from "@/lib/assistant/resolve-client";
 import type { AssistantLink, ToolName } from "@/lib/assistant/types";
+import { buildClientsListUrl } from "@/lib/client-list-url";
 import { rangeLast12Months, rangeThisMonth } from "@/lib/informes-range-presets";
+import { getPresetDateRange } from "@/lib/invoice-list-url";
 import { formatMoneyEUR } from "@/lib/money";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -50,6 +52,8 @@ export function executeAssistantTool(
   switch (name) {
     case "get_top_debtors":
       return toolGetTopDebtors(ctx, args);
+    case "get_top_clients_by_billing":
+      return toolGetTopClientsByBilling(ctx, args);
     case "get_client_summary":
       return toolGetClientSummary(ctx, args);
     case "get_client_last_invoice":
@@ -58,6 +62,12 @@ export function executeAssistantTool(
       return toolSearchInvoices(ctx, args);
     case "get_billing_summary":
       return toolGetBillingSummary(ctx, args);
+    case "get_invoices_due_soon":
+      return toolGetInvoicesDueSoon(ctx, args);
+    case "compare_billing_periods":
+      return toolCompareBillingPeriods(ctx, args);
+    case "draft_payment_reminder":
+      return toolDraftPaymentReminder(ctx, args);
     case "list_clients":
       return toolListClients(ctx, args);
     case "open_filtered_view":
@@ -103,6 +113,48 @@ function toolGetTopDebtors(ctx: AssistantContext, args: Record<string, unknown>)
         clientName: r.name,
         pendingEur: r.pending,
         openInvoiceCount: r.invoiceCount,
+      })),
+      empty: rows.length === 0,
+    },
+    links: rows.map((r) => clientLink(r.clientId, r.name)),
+  };
+}
+
+function toolGetTopClientsByBilling(
+  ctx: AssistantContext,
+  args: Record<string, unknown>,
+): ToolResult {
+  const limit = Math.min(10, Math.max(1, Number(args.limit) || 5));
+  const byClient = new Map<
+    string,
+    { name: string; billedEur: number; invoiceCount: number }
+  >();
+
+  for (const inv of issuedInvoices(ctx.invoices)) {
+    const prev = byClient.get(inv.clientId);
+    if (prev) {
+      prev.billedEur = Math.round((prev.billedEur + inv.total) * 100) / 100;
+      prev.invoiceCount += 1;
+    } else {
+      byClient.set(inv.clientId, {
+        name: inv.clientName,
+        billedEur: inv.total,
+        invoiceCount: 1,
+      });
+    }
+  }
+
+  const rows = [...byClient.entries()]
+    .map(([clientId, v]) => ({ clientId, ...v }))
+    .sort((a, b) => b.billedEur - a.billedEur)
+    .slice(0, limit);
+
+  return {
+    payload: {
+      clients: rows.map((r) => ({
+        clientName: r.name,
+        billedEur: r.billedEur,
+        invoiceCount: r.invoiceCount,
       })),
       empty: rows.length === 0,
     },
@@ -309,9 +361,190 @@ function toolGetBillingSummary(ctx: AssistantContext, args: Record<string, unkno
   };
 }
 
+function addDaysYmd(ymd: string, days: number): string {
+  const d = new Date(`${ymd}T12:00:00`);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function toolGetInvoicesDueSoon(ctx: AssistantContext, args: Record<string, unknown>): ToolResult {
+  const days = Math.min(30, Math.max(1, Number(args.days) || 7));
+  const limit = Math.min(15, Math.max(1, Number(args.limit) || 10));
+  const until = addDaysYmd(ctx.todayYmd, days);
+
+  const open = ctx.invoices
+    .filter(
+      (inv) =>
+        inv.outstanding > 0 &&
+        ["issued", "partial", "overdue"].includes(inv.effectiveStatus) &&
+        inv.dueDate &&
+        inv.dueDate <= until,
+    )
+    .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? ""))
+    .slice(0, limit);
+
+  const overdueCount = open.filter((i) => i.effectiveStatus === "overdue").length;
+
+  return {
+    payload: {
+      days,
+      until,
+      overdueCount,
+      count: open.length,
+      invoices: open.map((i) => ({
+        numberLabel: i.numberLabel,
+        clientName: i.clientName,
+        dueDate: i.dueDate,
+        outstandingEur: i.outstanding,
+        status: statusLabel(i.effectiveStatus),
+        isOverdue: i.effectiveStatus === "overdue",
+      })),
+      empty: open.length === 0,
+    },
+    links: open.map((i) => invoiceLink(i.id, i.numberLabel)),
+  };
+}
+
+function sumBilledInRange(invoices: AssistantInvoice[], from: string, to: string): number {
+  let sum = 0;
+  for (const inv of issuedInvoices(invoices)) {
+    const issue = inv.issueDate;
+    if (issue && issue >= from && issue <= to) {
+      sum += inv.total;
+    }
+  }
+  return Math.round(sum * 100) / 100;
+}
+
+function toolCompareBillingPeriods(ctx: AssistantContext, args: Record<string, unknown>): ToolResult {
+  const mode = args.mode?.toString() === "last_month_vs_prior" ? "last_month_vs_prior" : "month_over_month";
+  let currentLabel: string;
+  let previousLabel: string;
+  let currentFrom: string;
+  let currentTo: string;
+  let previousFrom: string;
+  let previousTo: string;
+
+  if (mode === "last_month_vs_prior") {
+    const last = getPresetDateRange("last_month");
+    const priorStart = new Date(`${last.from}T12:00:00`);
+    priorStart.setMonth(priorStart.getMonth() - 1);
+    const priorEnd = new Date(priorStart.getFullYear(), priorStart.getMonth() + 1, 0);
+    currentFrom = last.from;
+    currentTo = last.to;
+    previousFrom = priorStart.toISOString().slice(0, 10);
+    previousTo = priorEnd.toISOString().slice(0, 10);
+    currentLabel = "mes pasado";
+    previousLabel = "mes anterior al pasado";
+  } else {
+    const thisM = getPresetDateRange("this_month");
+    const lastM = getPresetDateRange("last_month");
+    currentFrom = thisM.from;
+    currentTo = thisM.to;
+    previousFrom = lastM.from;
+    previousTo = lastM.to;
+    currentLabel = "este mes";
+    previousLabel = "mes pasado";
+  }
+
+  const currentBilled = sumBilledInRange(ctx.invoices, currentFrom, currentTo);
+  const previousBilled = sumBilledInRange(ctx.invoices, previousFrom, previousTo);
+  const delta = Math.round((currentBilled - previousBilled) * 100) / 100;
+  const pct =
+    previousBilled > 0
+      ? Math.round(((currentBilled - previousBilled) / previousBilled) * 1000) / 10
+      : null;
+
+  return {
+    payload: {
+      currentLabel,
+      previousLabel,
+      currentFrom,
+      currentTo,
+      previousFrom,
+      previousTo,
+      currentBilledEur: currentBilled,
+      previousBilledEur: previousBilled,
+      deltaEur: delta,
+      deltaPercent: pct,
+    },
+    links: [{ label: "Ver informes", href: "/informes" }],
+  };
+}
+
+function toolDraftPaymentReminder(ctx: AssistantContext, args: Record<string, unknown>): ToolResult {
+  const resolved = resolveClient(ctx.clients, String(args.clientName ?? ""));
+  if (!resolved.ok) {
+    if (resolved.reason === "ambiguous") {
+      return {
+        payload: {
+          ambiguous: true,
+          candidates: resolved.candidates.map((c) => c.name),
+        },
+        links: resolved.candidates.map((c) => clientLink(c.id, c.name)),
+      };
+    }
+    return {
+      payload: {
+        notFound: resolved.reason === "not_found",
+        missingName: resolved.reason === "missing",
+      },
+      links: [],
+    };
+  }
+
+  const { client } = resolved;
+  const open = issuedInvoices(ctx.invoices.filter((i) => i.clientId === client.id)).filter(
+    (i) => i.outstanding > 0 && ["issued", "partial", "overdue"].includes(i.effectiveStatus),
+  );
+  const pending = open.reduce((s, i) => s + i.outstanding, 0);
+  const refs = open
+    .slice(0, 5)
+    .map((i) => i.numberLabel)
+    .join(", ");
+
+  if (open.length === 0) {
+    return {
+      payload: {
+        clientName: client.name,
+        hasDebt: false,
+      },
+      links: [clientLink(client.id, client.name)],
+    };
+  }
+
+  const reminderText = `Hola ${client.name},
+
+Le escribimos para recordarle que tiene un importe pendiente de ${formatMoneyEUR(pending)} en ${open.length} factura(s)${refs ? ` (${refs}${open.length > 5 ? ", …" : ""})` : ""}.
+
+Rogamos proceda al pago a la mayor brevedad posible. Si ya ha realizado el abono, ignore este mensaje.
+
+Gracias.`;
+
+  return {
+    payload: {
+      clientName: client.name,
+      hasDebt: true,
+      pendingEur: Math.round(pending * 100) / 100,
+      openInvoiceCount: open.length,
+      reminderText,
+    },
+    links: [clientLink(client.id, client.name)],
+  };
+}
+
 function toolListClients(ctx: AssistantContext, args: Record<string, unknown>): ToolResult {
+  const countOnly = args.countOnly === true || args.countOnly === "true";
   const search = args.search?.toString().trim();
   const limit = Math.min(20, Math.max(1, Number(args.limit) || 10));
+
+  if (countOnly) {
+    return {
+      payload: { countOnly: true, totalClients: ctx.clients.length },
+      links: [{ label: "Ver clientes", href: "/clients" }],
+    };
+  }
+
   let list = ctx.clients;
   if (search) {
     list = findClientsByQuery(ctx.clients, search, limit);
@@ -336,9 +569,32 @@ function toolListClients(ctx: AssistantContext, args: Record<string, unknown>): 
 function toolOpenFilteredView(args: Record<string, unknown>): ToolResult {
   const view = String(args.view ?? "invoices");
   const status = args.status?.toString().trim().toLowerCase();
+
+  if (view === "clients") {
+    const search = args.search?.toString().trim();
+    const kindRaw = args.kind?.toString().trim().toLowerCase();
+    const kind =
+      kindRaw === "individual" || kindRaw === "company" ? kindRaw : undefined;
+    const href = buildClientsListUrl({
+      ...(search ? { q: search } : {}),
+      ...(kind ? { kind } : {}),
+    });
+    const label = search
+      ? `Abrir clientes: «${search}»`
+      : kind === "individual"
+        ? "Abrir clientes particulares"
+        : kind === "company"
+          ? "Abrir clientes empresa"
+          : "Abrir listado de clientes";
+    return {
+      payload: { ok: true, view: "clients", search: search ?? null, kind: kind ?? null, href, label },
+      links: [{ label, href }],
+    };
+  }
+
   if (view !== "invoices") {
     return {
-      payload: { error: "Solo puedo abrir vistas de facturas por ahora." },
+      payload: { error: "Vista no reconocida." },
       links: [{ label: "Ver facturas", href: "/invoices" }],
     };
   }
@@ -361,6 +617,14 @@ function toolOpenFilteredView(args: Record<string, unknown>): ToolResult {
   } else if (status === "paid") {
     href = "/invoices?status=paid";
     label = "Abrir facturas pagadas";
+  }
+
+  const clientId = args.client_id?.toString().trim();
+  if (clientId) {
+    const u = new URL(href, "http://local");
+    u.searchParams.set("client_id", clientId);
+    href = `${u.pathname}${u.search}`;
+    label = "Abrir facturas del cliente";
   }
 
   return {
@@ -389,7 +653,22 @@ export function formatToolResultAsText(name: ToolName, result: ToolResult): stri
         (r, i) =>
           `${i + 1}. ${r.clientName}: ${formatMoneyEUR(r.pendingEur)} (${r.openInvoiceCount} factura(s) abiertas)`,
       );
-      return `Clientes con más pendiente de cobro:\n\n${lines.join("\n")}`;
+      return `Clientes con más pendiente de cobro (morosidad):\n\n${lines.join("\n")}`;
+    }
+    case "get_top_clients_by_billing": {
+      if (p.empty) {
+        return "Aún no hay facturación emitida por cliente para comparar.";
+      }
+      const rows = p.clients as {
+        clientName: string;
+        billedEur: number;
+        invoiceCount: number;
+      }[];
+      const lines = rows.map(
+        (r, i) =>
+          `${i + 1}. ${r.clientName}: ${formatMoneyEUR(r.billedEur)} facturados (${r.invoiceCount} factura(s) emitidas)`,
+      );
+      return `Clientes con más facturación acumulada:\n\n${lines.join("\n")}`;
     }
     case "get_client_summary": {
       if (p.ambiguous) {
@@ -446,7 +725,56 @@ export function formatToolResultAsText(name: ToolName, result: ToolResult): stri
     case "get_billing_summary": {
       return `Resumen (${p.periodLabel}, ${p.from} → ${p.to}): facturado ${formatMoneyEUR(p.billedEur as number)} en ${p.invoiceCount} factura(s), cobrado ${formatMoneyEUR(p.collectedEur as number)}. Ahora mismo pendiente ${formatMoneyEUR(p.pendingNowEur as number)} (vencido ${formatMoneyEUR(p.overdueNowEur as number)}).`;
     }
+    case "get_invoices_due_soon": {
+      if (p.empty) {
+        return `No hay facturas con vencimiento en los próximos ${p.days} días.`;
+      }
+      const rows = p.invoices as {
+        numberLabel: string;
+        clientName: string;
+        dueDate: string | null;
+        outstandingEur: number;
+        status: string;
+        isOverdue: boolean;
+      }[];
+      const lines = rows.map((r) => {
+        const tag = r.isOverdue ? " · vencida" : "";
+        return `· ${r.numberLabel} (${r.clientName}) — vence ${r.dueDate ?? "?"} — ${formatMoneyEUR(r.outstandingEur)} — ${r.status}${tag}`;
+      });
+      const overdueNote =
+        (p.overdueCount as number) > 0
+          ? `\n\n${p.overdueCount} ya están vencidas.`
+          : "";
+      return `Facturas con vencimiento hasta ${p.until} (${p.count}):\n\n${lines.join("\n")}${overdueNote}`;
+    }
+    case "compare_billing_periods": {
+      const cur = formatMoneyEUR(p.currentBilledEur as number);
+      const prev = formatMoneyEUR(p.previousBilledEur as number);
+      const delta = p.deltaEur as number;
+      const sign = delta > 0 ? "+" : "";
+      const pct = p.deltaPercent as number | null;
+      const pctStr = pct != null ? ` (${sign}${pct} %)` : "";
+      return `Facturación ${p.currentLabel} (${p.currentFrom} → ${p.currentTo}): ${cur}.\n${p.previousLabel} (${p.previousFrom} → ${p.previousTo}): ${prev}.\nVariación: ${sign}${formatMoneyEUR(delta)}${pctStr}.`;
+    }
+    case "draft_payment_reminder": {
+      if (p.ambiguous) {
+        const names = (p.candidates as string[]).join("», «");
+        return `Hay varios clientes parecidos: «${names}». Indica el nombre completo.`;
+      }
+      if (p.missingName) return "Indica el nombre del cliente para el recordatorio.";
+      if (p.notFound) return "No encuentro ese cliente.";
+      if (!p.hasDebt) {
+        return `${p.clientName} no tiene facturas pendientes de cobro. No hace falta recordatorio.`;
+      }
+      return `Borrador de recordatorio para ${p.clientName} (${formatMoneyEUR(p.pendingEur as number)} pendientes):\n\n---\n${p.reminderText}\n---\n\nPuedes copiarlo y enviarlo por email o WhatsApp.`;
+    }
     case "list_clients": {
+      if (p.countOnly) {
+        const n = p.totalClients as number;
+        return n === 0
+          ? "No tienes clientes registrados todavía."
+          : `Tienes ${n} cliente${n === 1 ? "" : "s"} registrado${n === 1 ? "" : "s"}.`;
+      }
       const rows = p.clients as { clientName: string; invoiceCount: number }[];
       if (rows.length === 0) return "No hay clientes que coincidan.";
       const lines = rows.map((r) => `· ${r.clientName} — ${r.invoiceCount} factura(s)`);

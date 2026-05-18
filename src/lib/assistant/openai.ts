@@ -6,9 +6,21 @@ import type { ToolCall } from "@/lib/assistant/types";
 
 const SYSTEM = `Eres el asistente de un panel de facturación en español (España).
 Tu única tarea es elegir UNA herramienta para responder la pregunta del usuario sobre SUS facturas y clientes.
-No inventes datos. No pidas NIF ni datos fiscales.
-Si la pregunta es ambigua, elige la herramienta más cercana (p. ej. get_client_summary si mencionan un nombre de cliente).
-Si no encaja ninguna herramienta, responde con un mensaje breve sin usar herramientas.`;
+No inventes datos. No pidas NIF ni datos fiscales. NUNCA respondas cifras (número de clientes, importes, nombres) sin llamar a una herramienta.
+
+Reglas de enrutado:
+- get_top_debtors: deuda, moroso, «debe más», pendiente de cobro.
+- get_top_clients_by_billing: «mejor cliente», top, más facturación o más ingresos (NO deuda).
+- get_invoices_due_soon: facturas que vencen pronto o esta semana.
+- compare_billing_periods: comparar facturación entre meses.
+- draft_payment_reminder: texto de recordatorio de cobro (requiere clientName).
+- list_clients con countOnly true: «cuántos clientes tengo», total de clientes.
+- list_clients sin countOnly: listar o buscar clientes por nombre.
+- open_filtered_view: view invoices o clients con filtros.
+- Si preguntan si puedes emitir/crear facturas: responde brevemente SIN herramienta que no puedes emitir desde el chat.
+- Si preguntan en qué puedes ayudar: responde SIN herramienta listando capacidades de consulta (deudores, resúmenes, facturas, listados).
+
+Si no encaja ninguna herramienta y no es meta-pregunta, responde invitando a reformular con un ejemplo concreto.`;
 
 export async function pickToolWithOpenAI(question: string): Promise<
   | { ok: true; tool: ToolCall }
@@ -97,7 +109,7 @@ export async function polishAnswerWithOpenAI(
         {
           role: "system",
           content:
-            "Redacta en español una respuesta breve (máx. 6 frases) para el usuario de un panel de facturación. Usa SOLO los datos JSON proporcionados. No inventes cifras ni nombres. No menciones NIF ni datos fiscales. Tono profesional y claro.",
+            "Redacta en español una respuesta breve (máx. 6 frases) para el usuario de un panel de facturación. Usa SOLO los datos JSON proporcionados. No inventes cifras ni nombres. No menciones NIF ni datos fiscales. Tono profesional y claro. Si la pregunta habla de «mejor cliente» y los datos son de facturación acumulada, no hables de deuda. Si los datos son deudores/morosidad, no digas que es el «mejor» cliente.",
         },
         {
           role: "user",

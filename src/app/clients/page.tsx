@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { AssistantContextualCta } from "@/components/assistant-contextual-cta";
 import { ClientKindTabs } from "@/components/client-kind-tabs";
 import { ClientsFiltersPanel } from "@/components/clients-filters-panel";
 import { PageHeader } from "@/components/page-header";
@@ -102,6 +103,15 @@ export default async function ClientsPage({ searchParams }: PageProps) {
             }
           />
         </Suspense>
+
+        <AssistantContextualCta
+          source="clients-list"
+          questions={[
+            "¿Cuántos clientes tengo?",
+            "¿Quién es mi cliente más moroso?",
+            "Abrir listado de clientes",
+          ]}
+        />
 
         <section className="min-w-0">
           <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
