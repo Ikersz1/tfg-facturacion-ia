@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { cookies, headers } from "next/headers";
 import { AppSidebar } from "@/components/app-sidebar";
+import { AssistantWidget } from "@/components/assistant-widget";
 import { ThemeCookieSync } from "@/components/theme-cookie-sync";
 import "./globals.css";
 
@@ -42,6 +43,7 @@ export default async function RootLayout({
       <body className="flex min-h-full flex-col bg-background text-zinc-900 dark:text-zinc-100">
         <ThemeCookieSync />
         {isAuthPage ? null : <AppSidebar />}
+        {isAuthPage ? null : <AssistantWidget />}
         <div
           className={`flex min-h-screen flex-1 flex-col${isAuthPage ? "" : " pt-14 md:pt-0 md:pl-64"}`}
         >

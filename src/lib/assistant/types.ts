@@ -16,7 +16,8 @@ export type ToolName =
   | "get_client_last_invoice"
   | "search_invoices"
   | "get_billing_summary"
-  | "list_clients";
+  | "list_clients"
+  | "open_filtered_view";
 
 export type ToolCall = {
   name: ToolName;

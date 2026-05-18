@@ -88,6 +88,24 @@ export function matchAssistantIntent(question: string): ToolCall | null {
     };
   }
 
+  if (/abrir|ll[eé]vame|ir a|mostrar/i.test(q) && /facturas/i.test(q)) {
+    const status = /vencid/i.test(q)
+      ? "overdue"
+      : /pendient|por cobrar/i.test(q)
+        ? "pending"
+        : /parcial/i.test(q)
+          ? "partial"
+          : /borrador/i.test(q)
+            ? "draft"
+            : /pagad/i.test(q)
+              ? "paid"
+              : undefined;
+    return {
+      name: "open_filtered_view",
+      args: { view: "invoices", ...(status ? { status } : {}) },
+    };
+  }
+
   if (clientName) {
     return { name: "get_client_summary", args: { clientName } };
   }

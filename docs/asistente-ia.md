@@ -1,20 +1,23 @@
-# Asistente de facturación con IA
+# Asistente de facturación con IA (copilot)
 
-Documento de referencia para la memoria del TFG. Describe el diseño, la privacidad de datos y el despliegue del módulo **Asistente** (`/asistente`) de la aplicación *tfg-facturacion-ia*.
+Documento de referencia para la memoria del TFG. Describe el diseño, la privacidad de datos, la experiencia de usuario tipo **copilot** y el despliegue del módulo **Asistente** de la aplicación *tfg-facturacion-ia*.
+
+El asistente no es solo una página de chat: está integrado en toda la aplicación como **atajo operativo** para consultar datos y abrir vistas filtradas con menos clics.
 
 ---
 
 ## 1. Objetivo
 
-Permitir al usuario del panel hacer **preguntas en lenguaje natural** sobre su actividad de facturación, por ejemplo:
+Permitir al usuario del panel hacer **preguntas en lenguaje natural** y obtener **respuestas accionables** sobre su actividad de facturación, por ejemplo:
 
 - ¿Qué cliente me debe más dinero?
 - ¿Cuántas facturas tiene [nombre de cliente]?
 - ¿Cuál es la última factura emitida de [cliente]?
 - Resume mi facturación de este mes o del trimestre.
 - ¿Qué facturas están vencidas?
+- Abrir facturas pendientes / vencidas (navegación directa a listado filtrado).
 
-El asistente **no sustituye** al gestor de facturas (crear, emitir, anular): solo **consulta y resume** información ya almacenada en la base de datos del usuario.
+El asistente **no sustituye** al gestor de facturas (crear, emitir, anular): en la versión actual **consulta, resume y enlaza** a pantallas útiles. La prioridad de diseño es **ahorrar pasos** frente a navegar manualmente por menús y filtros.
 
 ---
 
@@ -101,8 +104,11 @@ Solo existen las operaciones definidas en código. El modelo no puede inventar c
 | `search_invoices` | Listado filtrado por cliente y/o estado | «Facturas vencidas de X» |
 | `get_billing_summary` | Resumen de facturación y cobros en un periodo | «Resume el trimestre» |
 | `list_clients` | Listado de clientes (opcionalmente por texto) | «Mis clientes que se llamen…» |
+| `open_filtered_view` | Abre una vista de facturas ya filtrada por estado | «Abrir facturas vencidas», «Llévame a pendientes» |
 
-Cada herramienta devuelve un objeto JSON acotado y, en paralelo, **enlaces** (`/clients/{id}`, `/invoices/{id}`) que la interfaz muestra como botones.
+Cada herramienta devuelve un objeto JSON acotado y, en paralelo, **enlaces** (`/clients/{id}`, `/invoices/{id}`, `/invoices?status=…`) que la interfaz muestra como botones de acción.
+
+La herramienta `open_filtered_view` es la que más diferencia el copilot de un simple buscador: convierte la intención del usuario en **navegación directa** (p. ej. `/invoices?status=overdue` para vencidas, `/invoices?status=issued` para pendientes).
 
 La resolución de nombres de cliente (p. ej. «Acme» frente a «Acme SL») se hace en el servidor mediante búsqueda por similitud sobre el listado del tenant. Si hay ambigüedad, se devuelve la lista de candidatos y se pide al usuario que precise el nombre.
 
@@ -117,14 +123,49 @@ La resolución de nombres de cliente (p. ej. «Acme» frente a «Acme SL») se h
 
 ---
 
-## 6. Arquitectura de software
+## 6. Experiencia de usuario (copilot integrado)
 
-### 6.1. Ubicación en el proyecto
+### 6.1. Puntos de entrada
+
+| Punto de entrada | Descripción |
+|------------------|-------------|
+| **Widget flotante** | Botón fijo abajo a la derecha en todas las páginas autenticadas (`AssistantWidget` en `layout.tsx`). Abre un panel lateral de chat sin salir de la pantalla actual. |
+| **Inicio — CTA** | Bloque destacado en el dashboard (`HomeAssistantCta`): «Haz una pregunta y te llevo directo» + chips de preguntas rápidas. |
+| **Página `/asistente`** | Vista dedicada con el mismo motor de chat en formato amplio. |
+| **Evento global** | `window.dispatchEvent(new CustomEvent("tfg:open-assistant", { detail: { question?, source? } }))` o la función `openAssistantWidget()` para abrir el widget desde cualquier componente. |
+| **Botón reutilizable** | `OpenAssistantButton` envuelve cualquier control y dispara el evento con `question` y `source` opcionales (útil para analítica de uso). |
+
+### 6.2. Flujo de apertura desde Inicio
+
+1. El usuario entra en `/` y ve el CTA del copilot encima de las métricas.
+2. Pulsa «Preguntar ahora» o un chip (p. ej. «Abrir facturas pendientes»).
+3. Se abre el widget con la pregunta opcionalmente precargada.
+4. El servidor ejecuta la herramienta correspondiente y devuelve texto + botones (enlaces a cliente, factura o listado filtrado).
+
+### 6.3. Inspiración de referencia (repositorios externos)
+
+Durante el diseño se revisaron patrones de:
+
+- **parts-now**: widget flotante (FAB), panel lateral, evento `partsnow:open-chat`, sugerencias contextuales y tarjetas de acción en el chat (CopilotKit).
+- **partsnow-agent**: catálogo amplio de tools tipadas en servidor (LangGraph) y separación entre herramientas de consulta y acciones de navegación.
+
+En *tfg-facturacion-ia* se adoptó la **idea de copilot global y action-first**, sin depender de CopilotKit ni de un agente LangGraph separado: todo corre en Server Actions de Next.js con tools propias.
+
+---
+
+## 7. Arquitectura de software
+
+### 7.1. Ubicación en el proyecto
 
 | Componente | Ruta |
 |------------|------|
 | Página del asistente | `src/app/asistente/page.tsx` |
-| Interfaz de chat | `src/components/assistant-panel.tsx` |
+| Panel de página completa | `src/components/assistant-panel.tsx` |
+| Chat reutilizable (página + widget) | `src/components/assistant-chat.tsx` |
+| Widget flotante global | `src/components/assistant-widget.tsx` |
+| CTA en inicio | `src/components/home-assistant-cta.tsx` |
+| Botón «abrir asistente» | `src/components/open-assistant-button.tsx` |
+| Integración en layout | `src/app/layout.tsx` |
 | Server Action | `src/app/actions/assistant.ts` |
 | Orquestación | `src/lib/assistant/ask.ts` |
 | Carga de contexto (facturas, clientes, pagos) | `src/lib/assistant/context.ts` |
@@ -133,7 +174,7 @@ La resolución de nombres de cliente (p. ej. «Acme» frente a «Acme SL») se h
 | Integración OpenAI | `src/lib/assistant/openai.ts` |
 | Esquemas para function calling | `src/lib/assistant/tool-schemas.ts` |
 
-### 6.2. Flujo de una pregunta
+### 7.2. Flujo de una pregunta
 
 1. El usuario envía el texto desde el formulario (Server Action `assistantAskAction`).
 2. `askAssistant` carga el contexto del tenant (`loadAssistantContext`).
@@ -143,15 +184,15 @@ La resolución de nombres de cliente (p. ej. «Acme» frente a «Acme SL») se h
 6. La respuesta se formatea con plantillas; si hay API key y no está `ASSISTANT_SKIP_POLISH=1`, opcionalmente se **redacta** con un segundo llamado al LLM usando solo el JSON del paso 5 (`polishAnswerWithOpenAI`).
 7. Se devuelve texto + enlaces a la UI.
 
-### 6.3. Relación con el módulo de informes
+### 7.3. Relación con el módulo de informes
 
 En **Informes** existe un panel «Preguntas rápidas (IA)» que utiliza **reglas fijas** sobre los datos del informe (`reports-insight.ts`). El **Asistente** generaliza el enfoque a toda la aplicación, añade más herramientas y, de forma opcional, enrutado y redacción mediante un LLM.
 
 ---
 
-## 7. Configuración y despliegue
+## 8. Configuración y despliegue
 
-### 7.1. Variables de entorno
+### 8.1. Variables de entorno
 
 | Variable | Obligatoria | Descripción |
 |----------|-------------|-------------|
@@ -161,7 +202,7 @@ En **Informes** existe un panel «Preguntas rápidas (IA)» que utiliza **reglas
 
 Las variables de Supabase (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`) son las mismas que para el resto de la aplicación.
 
-### 7.2. Despliegue en Vercel
+### 8.2. Despliegue en Vercel
 
 Añadir las variables en **Settings → Environment Variables** y redeploy. La ruta `/asistente` queda protegida por el middleware de autenticación igual que el resto del panel.
 
@@ -169,28 +210,49 @@ Documentación operativa ampliada: `VERCEL.md` y `.env.local.example`.
 
 ---
 
-## 8. Limitaciones conocidas (v1)
+## 9. Cómo probar (demo TFG)
+
+### Sin OpenAI (modo local)
+
+1. Asegurarse de que **no** hay `OPENAI_API_KEY` en `.env.local` / Vercel.
+2. Iniciar sesión y abrir **Inicio**: usar el CTA o un chip de sugerencia.
+3. Pulsar el botón flotante **Preguntar** (abajo derecha) desde cualquier página.
+4. Probar preguntas:
+   - «¿Qué cliente me debe más?»
+   - «Abrir facturas vencidas» → debe ofrecer enlace a `/invoices?status=overdue`
+   - «Resume mi facturación de este mes»
+5. Comprobar que las respuestas incluyen **botones/enlaces** a clientes o facturas.
+
+### Con OpenAI (opcional)
+
+Añadir `OPENAI_API_KEY` y redeploy. El asistente entiende formulaciones más variadas; los datos enviados al proveedor siguen siendo solo agregados (apartado 3).
+
+---
+
+## 10. Limitaciones conocidas (v1)
 
 - El historial del chat es **solo en memoria del navegador** (se pierde al recargar).
 - No se pueden crear ni modificar facturas desde el asistente.
+- `open_filtered_view` solo abre vistas de **facturas** (no informes ni clientes con filtros complejos).
 - La extracción del nombre de cliente en modo local depende de patrones de texto; preguntas muy ambiguas pueden requerir reformular o usar OpenAI.
 - El proveedor LLM, si se usa, queda sujeto a sus condiciones de tratamiento de datos; en la memoria conviene citar la política de OpenAI (o el proveedor elegido) y justificar la minimización descrita en el apartado 3.
 
 ---
 
-## 9. Posibles extensiones futuras
+## 11. Posibles extensiones futuras
 
 - Persistencia del historial de conversación en base de datos.
-- Nuevas herramientas de solo lectura (productos más vendidos, comparativa año anterior).
-- Integración **n8n** reutilizando las mismas funciones de herramientas vía API interna o MCP, sin exponer datos sensibles al modelo.
-- Acciones con confirmación explícita del usuario (p. ej. «crear borrador») en una fase posterior, siempre con validación en servidor.
+- Sugerencias **contextuales por página** (en detalle de cliente: «¿Cuánto debe este cliente?»).
+- Nuevas herramientas: previsión de cobro 30 días, clientes en riesgo, texto de recordatorio de cobro.
+- Integración **n8n** reutilizando las mismas funciones de herramientas vía API interna, sin exponer datos sensibles al modelo.
+- Acciones con confirmación explícita (p. ej. «crear borrador para [cliente]») en una fase posterior.
 
 ---
 
-## 10. Resumen para la defensa oral
+## 12. Resumen para la defensa oral
 
-> El asistente no «ve» la base de datos ni maneja DNIs. El servidor ejecuta consultas acotadas con la sesión del usuario; el modelo de lenguaje, si se usa, solo elige qué consulta hacer y redacta la respuesta a partir de agregados. Sin clave de OpenAI, el sistema sigue funcionando con reglas locales, lo que demuestra que la lógica de negocio no depende del proveedor externo.
+> El asistente actúa como **copilot de facturación**: está visible desde el inicio y desde un widget global, responde con datos del propio tenant vía herramientas cerradas en servidor, y devuelve enlaces para actuar (ver cliente, factura o listado filtrado). No accede la IA a la base de datos ni recibe NIF ni líneas de factura; sin OpenAI el sistema sigue funcionando con reglas locales.
 
 ---
 
-*Versión del documento alineada con el commit que introduce `/asistente` y el módulo `src/lib/assistant/`.*
+*Versión del documento alineada con el módulo copilot: widget global, CTA en inicio, `open_filtered_view` y `src/lib/assistant/`.*

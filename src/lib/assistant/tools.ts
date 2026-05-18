@@ -60,6 +60,8 @@ export function executeAssistantTool(
       return toolGetBillingSummary(ctx, args);
     case "list_clients":
       return toolListClients(ctx, args);
+    case "open_filtered_view":
+      return toolOpenFilteredView(args);
     default:
       return {
         payload: { error: "Herramienta desconocida." },
@@ -331,6 +333,48 @@ function toolListClients(ctx: AssistantContext, args: Record<string, unknown>): 
   };
 }
 
+function toolOpenFilteredView(args: Record<string, unknown>): ToolResult {
+  const view = String(args.view ?? "invoices");
+  const status = args.status?.toString().trim().toLowerCase();
+  if (view !== "invoices") {
+    return {
+      payload: { error: "Solo puedo abrir vistas de facturas por ahora." },
+      links: [{ label: "Ver facturas", href: "/invoices" }],
+    };
+  }
+
+  let href = "/invoices";
+  let label = "Ver facturas";
+
+  if (status === "overdue") {
+    href = "/invoices?status=overdue";
+    label = "Abrir facturas vencidas";
+  } else if (status === "pending") {
+    href = "/invoices?status=issued";
+    label = "Abrir facturas pendientes";
+  } else if (status === "partial") {
+    href = "/invoices?status=partial";
+    label = "Abrir facturas parciales";
+  } else if (status === "draft") {
+    href = "/invoices?status=draft";
+    label = "Abrir borradores";
+  } else if (status === "paid") {
+    href = "/invoices?status=paid";
+    label = "Abrir facturas pagadas";
+  }
+
+  return {
+    payload: {
+      ok: true,
+      view: "invoices",
+      status: status ?? null,
+      href,
+      label,
+    },
+    links: [{ label, href }],
+  };
+}
+
 /** Respuesta en español sin enviar datos al LLM (modo sin API o fallback). */
 export function formatToolResultAsText(name: ToolName, result: ToolResult): string {
   const p = result.payload;
@@ -407,6 +451,10 @@ export function formatToolResultAsText(name: ToolName, result: ToolResult): stri
       if (rows.length === 0) return "No hay clientes que coincidan.";
       const lines = rows.map((r) => `· ${r.clientName} — ${r.invoiceCount} factura(s)`);
       return `Clientes (${rows.length} de ${p.totalClients}):\n\n${lines.join("\n")}`;
+    }
+    case "open_filtered_view": {
+      if (p.error) return String(p.error);
+      return `Listo. Te abro la vista filtrada: ${p.label}.`;
     }
     default:
       return "No he podido interpretar la consulta.";

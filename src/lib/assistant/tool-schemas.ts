@@ -96,4 +96,29 @@ export const ASSISTANT_OPENAI_TOOLS = [
       },
     },
   },
+  {
+    type: "function" as const,
+    function: {
+      name: "open_filtered_view",
+      description:
+        "Abrir una vista de facturas directamente filtrada (vencidas, pendientes, parciales, borradores, pagadas).",
+      parameters: {
+        type: "object",
+        properties: {
+          view: {
+            type: "string",
+            enum: ["invoices"],
+            description: "Vista objetivo",
+          },
+          status: {
+            type: "string",
+            enum: ["overdue", "pending", "partial", "draft", "paid"],
+            description: "Filtro de estado",
+          },
+        },
+        required: ["view"],
+        additionalProperties: false,
+      },
+    },
+  },
 ];

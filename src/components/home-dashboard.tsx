@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { MetricCard } from "@/components/dashboard-metric-card";
+import { HomeAssistantCta } from "@/components/home-assistant-cta";
 import { RevenueBarChart } from "@/components/revenue-bar-chart";
 import type { DashboardData, MonthlyIncome } from "@/lib/dashboard-data";
 import { formatMoneyEUR } from "@/lib/money";
@@ -61,6 +62,8 @@ function RevenueChart({ months }: { months: MonthlyIncome[] }) {
 export function HomeDashboard({ data }: { data: DashboardData }) {
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-4 py-8 sm:px-6 sm:py-10">
+      <HomeAssistantCta />
+
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           value={formatMoneyEUR(data.billedThisMonth)}
