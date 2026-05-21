@@ -411,11 +411,15 @@ export async function createRectificativeDraftAction(
 
   const rectInvoiceId = String(created.id);
   const preparedLines = sourceLines.map((line) => {
-    // Algunas BBDD tienen check de quantity > 0; usamos precio negativo para rectificar.
     const quantity = Math.abs(Number(line.quantity));
-    const unitPrice = -Math.abs(Number(line.unit_price));
+    const unitPrice = Math.abs(Number(line.unit_price));
     const taxRate = Number(line.tax_rate);
-    const { line_net, line_tax, line_total } = lineAmounts(quantity, unitPrice, taxRate);
+    // Mantiene quantity y unit_price en positivo para cumplir checks legacy,
+    // pero deja importes de línea en negativo para efecto rectificativo.
+    const base = roundCurrencyEUR(quantity * unitPrice);
+    const line_net = -Math.abs(base);
+    const line_tax = -Math.abs(roundCurrencyEUR(base * (taxRate / 100)));
+    const line_total = roundCurrencyEUR(line_net + line_tax);
     return {
       invoice_id: rectInvoiceId,
       line_number: Number(line.line_number),
@@ -432,7 +436,10 @@ export async function createRectificativeDraftAction(
 
   const { error: insLinesErr } = await supabase.from("invoice_lines").insert(preparedLines);
   if (insLinesErr) {
-    return { error: `Se creó el borrador rectificativo, pero no se copiaron líneas: ${insLinesErr.message}` };
+    await supabase.from("invoices").delete().eq("id", rectInvoiceId);
+    return {
+      error: `No se pudo crear la rectificativa por restricciones de datos: ${insLinesErr.message}`,
+    };
   }
 
   await recalculateInvoiceTotals(supabase, rectInvoiceId);
