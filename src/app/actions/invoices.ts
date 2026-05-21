@@ -411,8 +411,9 @@ export async function createRectificativeDraftAction(
 
   const rectInvoiceId = String(created.id);
   const preparedLines = sourceLines.map((line) => {
-    const quantity = -Math.abs(Number(line.quantity));
-    const unitPrice = Number(line.unit_price);
+    // Algunas BBDD tienen check de quantity > 0; usamos precio negativo para rectificar.
+    const quantity = Math.abs(Number(line.quantity));
+    const unitPrice = -Math.abs(Number(line.unit_price));
     const taxRate = Number(line.tax_rate);
     const { line_net, line_tax, line_total } = lineAmounts(quantity, unitPrice, taxRate);
     return {
