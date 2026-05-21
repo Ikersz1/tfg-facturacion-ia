@@ -580,14 +580,38 @@ export async function getReportsData(sp: Record<string, string | string[] | unde
   };
 }
 
-export type InvoiceExportRow = {
-  numberLabel: string;
-  clientName: string;
+export type InvoiceExportSummaryRow = {
+  invoiceId: string;
+  invoiceNumber: string;
+  series: string;
+  year: number;
+  status: string;
   issueDate: string;
-  total: number;
-  collected: number;
-  pending: number;
-  statusLabel: string;
+  dueDate: string;
+  customerId: string;
+  customerName: string;
+  customerTaxId: string;
+  currency: "EUR";
+  subtotalAmount: number;
+  taxAmount: number;
+  totalAmount: number;
+  paidAmount: number;
+  dueAmount: number;
+  createdAt: string;
+};
+
+export type InvoiceExportLineRow = {
+  invoiceId: string;
+  invoiceNumber: string;
+  lineIndex: number;
+  itemName: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  taxRate: number;
+  lineSubtotal: number;
+  lineTax: number;
+  lineTotal: number;
 };
 
 const STATUS_ES: Record<string, string> = {
@@ -599,16 +623,33 @@ const STATUS_ES: Record<string, string> = {
   overdue: "Vencida",
 };
 
-export async function getInvoiceExportRows(
+function invoiceNumberLabelForExport(inv: {
+  status: string;
+  series: string;
+  year: number;
+  number: number | null;
+}): string {
+  if (inv.number != null) {
+    return `${inv.series}-${inv.year}/${inv.number}`;
+  }
+  if (inv.status === "draft") {
+    return `${inv.series}-${inv.year}/draft`;
+  }
+  return `${inv.series}-${inv.year}/—`;
+}
+
+export async function getInvoiceExportSummaryRows(
   sp: Record<string, string | string[] | undefined>,
-): Promise<InvoiceExportRow[]> {
+): Promise<InvoiceExportSummaryRow[]> {
   const filters = resolveReportsFilters(sp);
   const { from, to, clientId } = filters;
 
   const supabase = await createClient();
   const { data: invoices } = await supabase
     .from("invoices")
-    .select("id, client_id, total, status, issue_date, due_date, series, year, number, clients ( name )");
+    .select(
+      "id, client_id, subtotal, tax_amount, total, status, issue_date, due_date, created_at, series, year, number, clients ( name, tax_id )",
+    );
   const { data: payments } = await supabase.from("payments").select("invoice_id, amount");
 
   if (!invoices?.length) return [];
@@ -619,7 +660,7 @@ export async function getInvoiceExportRows(
     paidByInvoice.set(id, roundCurrencyEUR((paidByInvoice.get(id) ?? 0) + Number(p.amount)));
   }
 
-  const rows: InvoiceExportRow[] = [];
+  const rows: InvoiceExportSummaryRow[] = [];
   for (const inv of invoices) {
     const st = inv.status as string;
     if (st === "draft") continue;
@@ -627,12 +668,14 @@ export async function getInvoiceExportRows(
     if (!issue || !inYmdRange(issue, from, to)) continue;
     if (clientId && (inv.client_id as string) !== clientId) continue;
 
-    const cr = inv.clients as { name: string } | { name: string }[] | null;
+    const cr = inv.clients as { name: string; tax_id?: string | null } | { name: string; tax_id?: string | null }[] | null;
     const client = Array.isArray(cr) ? cr[0] : cr;
-    const num =
-      inv.number != null
-        ? `${inv.series}-${inv.year}/${inv.number}`
-        : `${inv.series}-${inv.year}/borrador`;
+    const num = invoiceNumberLabelForExport({
+      status: st,
+      series: String(inv.series),
+      year: Number(inv.year),
+      number: inv.number != null ? Number(inv.number) : null,
+    });
     const total = roundCurrencyEUR(Number(inv.total));
     const collected = roundCurrencyEUR(paidByInvoice.get(inv.id as string) ?? 0);
     const pending =
@@ -647,16 +690,99 @@ export async function getInvoiceExportRows(
     });
 
     rows.push({
-      numberLabel: num,
-      clientName: client?.name ?? "—",
+      invoiceId: String(inv.id),
+      invoiceNumber: num,
+      series: String(inv.series),
+      year: Number(inv.year),
+      status: STATUS_ES[eff] ?? eff,
       issueDate: issue.slice(0, 10),
-      total,
-      collected,
-      pending,
-      statusLabel: STATUS_ES[eff] ?? eff,
+      dueDate: ((inv.due_date as string | null) ?? "").slice(0, 10),
+      customerId: String(inv.client_id),
+      customerName: client?.name ?? "—",
+      customerTaxId: client?.tax_id ?? "",
+      currency: "EUR",
+      subtotalAmount: roundCurrencyEUR(Number(inv.subtotal ?? 0)),
+      taxAmount: roundCurrencyEUR(Number(inv.tax_amount ?? 0)),
+      totalAmount: total,
+      paidAmount: collected,
+      dueAmount: pending,
+      createdAt: String(inv.created_at ?? "").slice(0, 19),
     });
   }
 
   rows.sort((a, b) => (a.issueDate < b.issueDate ? 1 : -1));
   return rows;
+}
+
+export async function getInvoiceExportLineRows(
+  sp: Record<string, string | string[] | undefined>,
+): Promise<InvoiceExportLineRow[]> {
+  const filters = resolveReportsFilters(sp);
+  const { from, to, clientId } = filters;
+
+  const supabase = await createClient();
+  const [invRes, lineRes, prodRes] = await Promise.all([
+    supabase
+      .from("invoices")
+      .select("id, client_id, status, issue_date, series, year, number")
+      .neq("status", "draft"),
+    supabase
+      .from("invoice_lines")
+      .select("invoice_id, line_number, product_id, description, quantity, unit_price, tax_rate, line_net, line_tax, line_total"),
+    supabase.from("products").select("id, name"),
+  ]);
+
+  const invoices = invRes.data ?? [];
+  const lines = lineRes.data ?? [];
+  const products = prodRes.data ?? [];
+  if (invoices.length === 0 || lines.length === 0) return [];
+
+  const productNameById = new Map<string, string>();
+  for (const p of products) {
+    productNameById.set(String(p.id), String(p.name ?? ""));
+  }
+
+  const invoiceById = new Map<string, (typeof invoices)[number]>();
+  for (const inv of invoices) {
+    const issue = inv.issue_date as string | null;
+    if (!issue || !inYmdRange(issue, from, to)) continue;
+    if (clientId && String(inv.client_id) !== clientId) continue;
+    invoiceById.set(String(inv.id), inv);
+  }
+
+  const out: InvoiceExportLineRow[] = [];
+  for (const l of lines) {
+    const invoiceId = String(l.invoice_id);
+    const inv = invoiceById.get(invoiceId);
+    if (!inv) continue;
+
+    const invoiceNumber = invoiceNumberLabelForExport({
+      status: String(inv.status),
+      series: String(inv.series),
+      year: Number(inv.year),
+      number: inv.number != null ? Number(inv.number) : null,
+    });
+    const pid = l.product_id != null ? String(l.product_id) : "";
+    const itemName = pid ? productNameById.get(pid) ?? "" : "";
+
+    out.push({
+      invoiceId,
+      invoiceNumber,
+      lineIndex: Number(l.line_number ?? 0),
+      itemName,
+      description: String(l.description ?? ""),
+      quantity: Number(l.quantity ?? 0),
+      unitPrice: roundCurrencyEUR(Number(l.unit_price ?? 0)),
+      taxRate: Number(l.tax_rate ?? 0),
+      lineSubtotal: roundCurrencyEUR(Number(l.line_net ?? 0)),
+      lineTax: roundCurrencyEUR(Number(l.line_tax ?? 0)),
+      lineTotal: roundCurrencyEUR(Number(l.line_total ?? 0)),
+    });
+  }
+
+  out.sort((a, b) => {
+    if (a.invoiceNumber === b.invoiceNumber) return a.lineIndex - b.lineIndex;
+    return a.invoiceNumber.localeCompare(b.invoiceNumber, "es");
+  });
+  return out;
 }

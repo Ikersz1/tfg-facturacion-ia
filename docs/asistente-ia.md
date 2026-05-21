@@ -17,7 +17,9 @@ Permitir al usuario del panel hacer **preguntas en lenguaje natural** y obtener 
 - ¿Qué facturas están vencidas?
 - Abrir facturas pendientes / vencidas (navegación directa a listado filtrado).
 
-El asistente **no sustituye** al gestor de facturas (crear, emitir, anular): en la versión actual **consulta, resume y enlaza** a pantallas útiles. La prioridad de diseño es **ahorrar pasos** frente a navegar manualmente por menús y filtros.
+El asistente **no sustituye** al gestor de facturas (crear, emitir, anular): en la versión actual **consulta, resume, enlaza** y puede **registrar cobros con confirmación**. La prioridad de diseño es **ahorrar pasos** frente a navegar manualmente por menús y filtros.
+
+Ejemplo de acción con confirmación: «He cobrado 100 de [cliente]» → lista facturas abiertas (emitidas, parciales, vencidas) → el usuario elige la factura → se registra el pago en Supabase (misma lógica que el formulario de detalle).
 
 ---
 
@@ -98,13 +100,18 @@ Solo existen las operaciones definidas en código. El modelo no puede inventar c
 
 | Herramienta | Descripción | Ejemplos de pregunta |
 |-------------|-------------|----------------------|
-| `get_top_debtors` | Clientes con mayor importe pendiente de cobro | «¿Quién me debe más?» |
+| `get_top_debtors` | Clientes con mayor importe pendiente (morosidad) | «¿Quién me debe más?», «cliente más moroso» |
+| `get_top_clients_by_billing` | Clientes con más facturación acumulada | «Mi mejor cliente» |
 | `get_client_summary` | Número de facturas y deuda pendiente de un cliente | «¿Cuánto debe Acme?» |
 | `get_client_last_invoice` | Última factura emitida de un cliente | «Última factura de [cliente]» |
 | `search_invoices` | Listado filtrado por cliente y/o estado | «Facturas vencidas de X» |
 | `get_billing_summary` | Resumen de facturación y cobros en un periodo | «Resume el trimestre» |
-| `list_clients` | Listado de clientes (opcionalmente por texto) | «Mis clientes que se llamen…» |
-| `open_filtered_view` | Abre una vista de facturas ya filtrada por estado | «Abrir facturas vencidas», «Llévame a pendientes» |
+| `get_invoices_due_soon` | Facturas con vencimiento próximo o ya vencidas con pendiente | «Facturas que vencen esta semana» |
+| `compare_billing_periods` | Comparar facturación entre meses | «Compara con el mes pasado» |
+| `draft_payment_reminder` | Borrador de mensaje de recordatorio de cobro | «Genera recordatorio para [cliente]» |
+| `prepare_register_payment` | Inicia registro de cobro (flujo en dos pasos) | «He cobrado 100 de [cliente]» |
+| `list_clients` | Listar o contar clientes | «¿Cuántos clientes tengo?» |
+| `open_filtered_view` | Abre listado filtrado de facturas o clientes | «Abrir facturas vencidas», «Abrir clientes» |
 
 Cada herramienta devuelve un objeto JSON acotado y, en paralelo, **enlaces** (`/clients/{id}`, `/invoices/{id}`, `/invoices?status=…`) que la interfaz muestra como botones de acción.
 
@@ -119,7 +126,8 @@ La resolución de nombres de cliente (p. ej. «Acme» frente a «Acme SL») se h
 - Las consultas usan el cliente Supabase del **servidor** con la **cookie de sesión** del usuario autenticado.
 - Las políticas **RLS** (`user_id` por fila) garantizan que un usuario solo ve sus clientes y facturas.
 - No hay tokens de API públicos para el asistente: el acceso pasa por el mismo login que el resto del panel (`/login`).
-- Las acciones destructivas (emitir, borrar, modificar) **no** están expuestas como herramientas del asistente en la versión actual.
+- Las acciones destructivas (emitir, borrar, anular) **no** están expuestas como herramientas del asistente.
+- **Registrar cobro** sí está permitido, con confirmación explícita (elección de factura) y la misma validación que `addPaymentAction` en el detalle de factura (`registerInvoicePayment`).
 
 ---
 
@@ -131,9 +139,12 @@ La resolución de nombres de cliente (p. ej. «Acme» frente a «Acme SL») se h
 |------------------|-------------|
 | **Widget flotante** | Botón fijo abajo a la derecha en todas las páginas autenticadas (`AssistantWidget` en `layout.tsx`). Abre un panel lateral de chat sin salir de la pantalla actual. |
 | **Inicio — CTA** | Bloque destacado en el dashboard (`HomeAssistantCta`): «Haz una pregunta y te llevo directo» + chips de preguntas rápidas. |
-| **Página `/asistente`** | Vista dedicada con el mismo motor de chat en formato amplio. |
-| **Evento global** | `window.dispatchEvent(new CustomEvent("tfg:open-assistant", { detail: { question?, source? } }))` o la función `openAssistantWidget()` para abrir el widget desde cualquier componente. |
-| **Botón reutilizable** | `OpenAssistantButton` envuelve cualquier control y dispara el evento con `question` y `source` opcionales (útil para analítica de uso). |
+| **Ajustes → Asistente IA** | `/settings/asistente`: estado OpenAI, privacidad, ejemplos y botón para abrir el widget. La ruta `/asistente` redirige aquí. |
+| **Chips contextuales** | En ficha de cliente, listados de clientes/facturas (`AssistantContextualCta`): abren el widget con la pregunta precargada. |
+| **Evento global** | `window.dispatchEvent(new CustomEvent("tfg:open-assistant", { detail: { question?, source? } }))` o `openAssistantWidget()`. |
+| **Botón reutilizable** | `OpenAssistantButton` con `question` y `source` opcionales. |
+
+El asistente **no** aparece como ítem principal en el sidebar; el chat vive en el widget flotante.
 
 ### 6.2. Flujo de apertura desde Inicio
 
@@ -159,9 +170,13 @@ En *tfg-facturacion-ia* se adoptó la **idea de copilot global y action-first**,
 
 | Componente | Ruta |
 |------------|------|
-| Página del asistente | `src/app/asistente/page.tsx` |
-| Panel de página completa | `src/components/assistant-panel.tsx` |
-| Chat reutilizable (página + widget) | `src/components/assistant-chat.tsx` |
+| Ajustes asistente | `src/app/settings/asistente/page.tsx` |
+| Redirección legada | `src/app/asistente/page.tsx` → `/settings/asistente` |
+| Chat (widget) | `src/components/assistant-chat.tsx` |
+| Chips contextuales | `src/components/assistant-contextual-cta.tsx` |
+| Flujo de cobro | `src/lib/assistant/payment-flow.ts`, `parse-payment-intent.ts` |
+| Registro de pago (servidor) | `src/lib/payments/register-invoice-payment.ts` |
+| Historial en navegador | `src/lib/assistant/chat-storage.ts` |
 | Widget flotante global | `src/components/assistant-widget.tsx` |
 | CTA en inicio | `src/components/home-assistant-cta.tsx` |
 | Botón «abrir asistente» | `src/components/open-assistant-button.tsx` |
@@ -231,28 +246,56 @@ Añadir `OPENAI_API_KEY` y redeploy. El asistente entiende formulaciones más va
 
 ## 10. Limitaciones conocidas (v1)
 
-- El historial del chat es **solo en memoria del navegador** (se pierde al recargar).
-- No se pueden crear ni modificar facturas desde el asistente.
-- `open_filtered_view` solo abre vistas de **facturas** (no informes ni clientes con filtros complejos).
-- La extracción del nombre de cliente en modo local depende de patrones de texto; preguntas muy ambiguas pueden requerir reformular o usar OpenAI.
-- El proveedor LLM, si se usa, queda sujeto a sus condiciones de tratamiento de datos; en la memoria conviene citar la política de OpenAI (o el proveedor elegido) y justificar la minimización descrita en el apartado 3.
+- El historial del chat y el **cobro pendiente de confirmar** se guardan en **localStorage** del navegador (no en Supabase); al cambiar de dispositivo o borrar datos del sitio se pierden.
+- No se pueden **crear, emitir ni anular** facturas desde el asistente.
+- Un cobro solo se aplica a **una factura por vez** (no reparto automático entre varias).
+- La extracción de importe y nombre de cliente en modo local depende de **patrones de texto**; formulaciones muy raras pueden requerir reformular o usar OpenAI.
+- El proveedor LLM, si se usa, queda sujeto a sus condiciones de tratamiento de datos; en la memoria conviene citar la política de OpenAI y la minimización del apartado 3.
 
 ---
 
-## 11. Posibles extensiones futuras
+## 11. Backlog — mejoras futuras (pendiente de revisar)
 
-- Persistencia del historial de conversación en base de datos.
-- Sugerencias **contextuales por página** (en detalle de cliente: «¿Cuánto debe este cliente?»).
-- Nuevas herramientas: previsión de cobro 30 días, clientes en riesgo, texto de recordatorio de cobro.
-- Integración **n8n** reutilizando las mismas funciones de herramientas vía API interna, sin exponer datos sensibles al modelo.
-- Acciones con confirmación explícita (p. ej. «crear borrador para [cliente]») en una fase posterior.
+> Estado a mayo 2026: el módulo se considera **suficiente para el TFG** en su versión actual. Las líneas siguientes son ideas acordadas para **implementar más adelante**, no bloqueantes.
+
+### Prioridad alta (buen impacto en demo)
+
+| ID | Mejora | Notas |
+|----|--------|--------|
+| B1 | **Reparto de un cobro en varias facturas** | Tras «he cobrado 500 de [cliente]», asignar importes a varias facturas abiertas (ahora solo una factura por cobro). |
+| B2 | **Chips en detalle de factura** | P. ej. «¿Cuánto queda pendiente?», «Registrar cobro de X €» con contexto ya cargado. |
+| B3 | **Copiar al portapapeles** | Tras generar recordatorio de cobro o confirmar un pago, botón «Copiar texto». |
+
+### Prioridad media
+
+| ID | Mejora | Notas |
+|----|--------|--------|
+| B4 | **Persistencia del historial en Supabase** | Tabla `assistant_messages` por tenant; útil si se pide trazabilidad, no obligatorio para v1. |
+| B5 | **Diagrama en memoria del TFG** | Secuencia usuario → Server Action → tools → RLS (documentación, no código). |
+| B6 | **Sugerencias en más pantallas** | Informes, dashboard de métricas, detalle de factura (ampliar `AssistantContextualCta`). |
+
+### Prioridad baja / explícitamente descartado para v1
+
+| ID | Mejora | Motivo de aplazamiento |
+|----|--------|-------------------------|
+| B7 | Crear o emitir facturas desde el chat | Complejidad fiscal y de UX; fuera de alcance copilot consulta + cobro. |
+| B8 | Previsión ML / clientes en riesgo | Poco tiempo de demo frente al esfuerzo. |
+| B9 | Integración **n8n** | Ya prevista en sidebar como «Pronto»; API interna reutilizando tools. |
+| B10 | Historial solo en servidor sin localStorage | Solo si B4 se implementa. |
+
+### Ya implementado (referencia, no backlog)
+
+- Widget global + panel lateral, CTA en inicio, ajustes en `/settings/asistente`.
+- Herramientas de consulta ampliadas (moroso vs mejor cliente, vencimientos, comparativa de meses, recordatorio de cobro).
+- Registro de cobro conversacional con elección de factura (`prepare_register_payment` + confirmación).
+- Chips en listado y ficha de cliente; historial local; dictado por voz (si el navegador lo soporta).
 
 ---
 
 ## 12. Resumen para la defensa oral
 
-> El asistente actúa como **copilot de facturación**: está visible desde el inicio y desde un widget global, responde con datos del propio tenant vía herramientas cerradas en servidor, y devuelve enlaces para actuar (ver cliente, factura o listado filtrado). No accede la IA a la base de datos ni recibe NIF ni líneas de factura; sin OpenAI el sistema sigue funcionando con reglas locales.
+> El asistente actúa como **copilot de facturación**: widget global, herramientas cerradas en servidor con RLS, respuestas con enlaces y **registro de cobros con confirmación**. La IA no accede a la base de datos ni recibe NIF; sin OpenAI funciona con reglas locales.
 
 ---
 
-*Versión del documento alineada con el módulo copilot: widget global, CTA en inicio, `open_filtered_view` y `src/lib/assistant/`.*
+*Última revisión: widget global, cobro conversacional, ajustes en `/settings/asistente`, backlog en §11.*
