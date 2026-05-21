@@ -354,6 +354,112 @@ export async function issueInvoiceAction(
   return warn ? { ok: true, warn } : { ok: true };
 }
 
+export async function createRectificativeDraftAction(
+  _prev: InvoiceActionState,
+  formData: FormData,
+): Promise<InvoiceActionState> {
+  const sourceInvoiceId = formData.get("invoice_id")?.toString();
+  if (!sourceInvoiceId) return { error: "Falta factura de origen." };
+
+  const supabase = await createClient();
+  const auth = await requireAuthUserId(supabase);
+  if ("error" in auth) return { error: auth.error };
+
+  const { data: source, error: sourceErr } = await supabase
+    .from("invoices")
+    .select("id, client_id, status, series, year, number")
+    .eq("id", sourceInvoiceId)
+    .single();
+
+  if (sourceErr || !source) return { error: "Factura origen no encontrada." };
+
+  const sourceStatus = String(source.status);
+  if (!["issued", "partial", "paid", "overdue"].includes(sourceStatus)) {
+    return { error: "Solo puedes rectificar facturas emitidas, parciales, pagadas o vencidas." };
+  }
+
+  const { data: sourceLines, error: linesErr } = await supabase
+    .from("invoice_lines")
+    .select("line_number, product_id, description, quantity, unit_price, tax_rate")
+    .eq("invoice_id", sourceInvoiceId)
+    .order("line_number", { ascending: true });
+
+  if (linesErr) return { error: linesErr.message };
+  if (!sourceLines || sourceLines.length === 0) {
+    return { error: "La factura origen no tiene líneas para rectificar." };
+  }
+
+  const rectYear = new Date().getFullYear();
+  const { data: created, error: createErr } = await supabase
+    .from("invoices")
+    .insert({
+      user_id: auth.userId,
+      client_id: source.client_id,
+      series: "R",
+      year: rectYear,
+      status: "draft",
+      subtotal: 0,
+      tax_amount: 0,
+      total: 0,
+    })
+    .select("id")
+    .single();
+
+  if (createErr || !created) {
+    return { error: createErr?.message ?? "No se pudo crear el borrador rectificativo." };
+  }
+
+  const rectInvoiceId = String(created.id);
+  const preparedLines = sourceLines.map((line) => {
+    const quantity = -Math.abs(Number(line.quantity));
+    const unitPrice = Number(line.unit_price);
+    const taxRate = Number(line.tax_rate);
+    const { line_net, line_tax, line_total } = lineAmounts(quantity, unitPrice, taxRate);
+    return {
+      invoice_id: rectInvoiceId,
+      line_number: Number(line.line_number),
+      product_id: line.product_id ?? null,
+      description: String(line.description ?? ""),
+      quantity,
+      unit_price: unitPrice,
+      tax_rate: taxRate,
+      line_net,
+      line_tax,
+      line_total,
+    };
+  });
+
+  const { error: insLinesErr } = await supabase.from("invoice_lines").insert(preparedLines);
+  if (insLinesErr) {
+    return { error: `Se creó el borrador rectificativo, pero no se copiaron líneas: ${insLinesErr.message}` };
+  }
+
+  await recalculateInvoiceTotals(supabase, rectInvoiceId);
+
+  const sourceNumberLabel =
+    source.number != null
+      ? `${source.series}-${source.year}/${source.number}`
+      : `${source.series}-${source.year}/borrador`;
+
+  await supabase.from("invoice_events").insert([
+    {
+      invoice_id: rectInvoiceId,
+      event_type: "rectificative_created",
+      payload: { source_invoice_id: sourceInvoiceId, source_number_label: sourceNumberLabel },
+    },
+    {
+      invoice_id: sourceInvoiceId,
+      event_type: "rectified_by_draft",
+      payload: { rectificative_invoice_id: rectInvoiceId },
+    },
+  ]);
+
+  revalidatePath(`/invoices/${sourceInvoiceId}`);
+  revalidatePath(`/invoices/${rectInvoiceId}`);
+  revalidatePath("/invoices");
+  redirect(`/invoices/${rectInvoiceId}`);
+}
+
 function normalizeInvoiceClient(raw: unknown): {
   name: string;
   tax_id: string | null;

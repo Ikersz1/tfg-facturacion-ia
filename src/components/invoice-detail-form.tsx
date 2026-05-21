@@ -4,6 +4,7 @@ import { useActionState, useCallback, useEffect, useMemo, useRef, useState } fro
 import { useRouter } from "next/navigation";
 import {
   addInvoiceLineAction,
+  createRectificativeDraftAction,
   deleteInvoiceLineAction,
   issueInvoiceAction,
   type InvoiceActionState,
@@ -115,11 +116,15 @@ export function InvoiceDetailForm({
   lines,
   products,
   payments = [],
+  sourceRectificative,
+  rectifiedByInvoiceId,
 }: {
   invoice: InvoiceHead;
   lines: Line[];
   products: ProductOpt[];
   payments?: PaymentRow[];
+  sourceRectificative?: { sourceId: string; sourceLabel: string } | null;
+  rectifiedByInvoiceId?: string | null;
 }) {
   const router = useRouter();
   const isDraft = invoice.status === "draft";
@@ -209,6 +214,10 @@ export function InvoiceDetailForm({
     addPaymentAndMaybeClose,
     payInitial,
   );
+  const [rectState, rectForm, rectPending] = useActionState(
+    createRectificativeDraftAction,
+    initial,
+  );
 
   const paidSum = roundCurrencyEUR(
     payments.reduce((s, p) => s + p.amount, 0),
@@ -239,6 +248,10 @@ export function InvoiceDetailForm({
     displayStatus === "issued" ||
     displayStatus === "overdue" ||
     displayStatus === "partial";
+  const canCreateRectificative =
+    !isDraft &&
+    ["issued", "partial", "paid", "overdue"].includes(displayStatus) &&
+    invoice.series !== "R";
 
   const numberLabel =
     invoice.number != null
@@ -309,13 +322,56 @@ export function InvoiceDetailForm({
               </div>
             </dl>
             <div className="mt-4 border-t border-zinc-200 pt-4 dark:border-zinc-700">
-              <a
-                href={`/api/invoices/${invoice.id}/pdf`}
-                className="inline-flex h-9 items-center rounded-lg border border-brand-border bg-brand-soft px-3 text-sm font-medium text-accent hover:bg-brand-soft dark:border-brand-border/70 dark:bg-brand-soft dark:text-accent"
-              >
-                Descargar PDF
-              </a>
+              <div className="flex flex-wrap gap-2">
+                <a
+                  href={`/api/invoices/${invoice.id}/pdf`}
+                  className="inline-flex h-9 items-center rounded-lg border border-brand-border bg-brand-soft px-3 text-sm font-medium text-accent hover:bg-brand-soft dark:border-brand-border/70 dark:bg-brand-soft dark:text-accent"
+                >
+                  Descargar PDF
+                </a>
+                {canCreateRectificative ? (
+                  <form action={rectForm}>
+                    <input type="hidden" name="invoice_id" value={invoice.id} />
+                    <button
+                      type="submit"
+                      disabled={rectPending}
+                      className="inline-flex h-9 items-center rounded-lg border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+                    >
+                      {rectPending ? "Creando rectificativa..." : "Crear rectificativa"}
+                    </button>
+                  </form>
+                ) : null}
+              </div>
+              {rectState?.error ? (
+                <p className="mt-2 text-sm text-red-600 dark:text-red-400" role="alert">
+                  {rectState.error}
+                </p>
+              ) : null}
             </div>
+            {rectifiedByInvoiceId ? (
+              <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
+                Esta factura tiene un borrador rectificativo asociado:{" "}
+                <Link
+                  href={`/invoices/${rectifiedByInvoiceId}`}
+                  className="font-medium text-accent underline underline-offset-2 hover:text-accent-hover"
+                >
+                  abrir rectificativa
+                </Link>
+                .
+              </p>
+            ) : null}
+            {sourceRectificative ? (
+              <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
+                Rectificativa de{" "}
+                <Link
+                  href={`/invoices/${sourceRectificative.sourceId}`}
+                  className="font-medium text-accent underline underline-offset-2 hover:text-accent-hover"
+                >
+                  {sourceRectificative.sourceLabel}
+                </Link>
+                .
+              </p>
+            ) : null}
           </>
         ) : (
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
