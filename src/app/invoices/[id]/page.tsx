@@ -54,39 +54,6 @@ export default async function InvoiceDetailPage(props: PageProps) {
     .eq("invoice_id", id)
     .order("paid_at", { ascending: false });
 
-  const { data: rectRefEvents } = await supabase
-    .from("invoice_events")
-    .select("payload, created_at")
-    .eq("invoice_id", id)
-    .eq("event_type", "rectificative_created")
-    .order("created_at", { ascending: false })
-    .limit(1);
-
-  const sourceRectificative = (() => {
-    const p = rectRefEvents?.[0]?.payload as
-      | { source_invoice_id?: string; source_number_label?: string }
-      | undefined;
-    if (!p?.source_invoice_id) return null;
-    return {
-      sourceId: p.source_invoice_id,
-      sourceLabel: p.source_number_label ?? "factura origen",
-    };
-  })();
-
-  const { data: rectifiedByEvents } = await supabase
-    .from("invoice_events")
-    .select("payload, created_at")
-    .eq("invoice_id", id)
-    .eq("event_type", "rectified_by_draft")
-    .order("created_at", { ascending: false })
-    .limit(1);
-
-  const rectifiedBy = (() => {
-    const p = rectifiedByEvents?.[0]?.payload as { rectificative_invoice_id?: string } | undefined;
-    if (!p?.rectificative_invoice_id) return null;
-    return p.rectificative_invoice_id;
-  })();
-
   return (
     <div className="flex w-full flex-1 flex-col">
       <PageHeader
@@ -152,8 +119,6 @@ export default async function InvoiceDetailPage(props: PageProps) {
               notes: p.notes,
             }))
           }
-          sourceRectificative={sourceRectificative}
-          rectifiedByInvoiceId={rectifiedBy}
         />
       </div>
     </div>
