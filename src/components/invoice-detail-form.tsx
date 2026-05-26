@@ -270,7 +270,7 @@ export function InvoiceDetailForm({
               )}
               {invoice.clients?.tax_id ? <span>· {invoice.clients.tax_id}</span> : null}
               <Link
-                href={`/clients/${invoice.client_id}`}
+                href={`/clients/${invoice.client_id}?edit=1`}
                 className="text-xs font-medium text-zinc-500 underline underline-offset-2 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
                 title="Editar cliente"
               >
@@ -961,7 +961,7 @@ export function InvoiceDetailForm({
                 : null}
               {!invoice.clients.address?.trim() ? "domicilio fiscal (calle, CP y ciudad)" : null}.{" "}
               <Link
-                href={`/clients/${invoice.client_id}`}
+                href={`/clients/${invoice.client_id}?edit=1`}
                 className="font-medium underline hover:text-amber-700 dark:hover:text-amber-200"
               >
                 Editar cliente

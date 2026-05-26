@@ -113,56 +113,56 @@ export default async function ClientDetailPage({ params, searchParams }: PagePro
           ]}
         />
 
-        <div className="grid gap-6 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 sm:grid-cols-2">
-          <dl className="space-y-2 text-sm">
-            <div>
-              <dt className="text-zinc-500 dark:text-zinc-400">Tipo</dt>
-              <dd className="text-zinc-900 dark:text-zinc-50">
-                {clientKindLabel(clientKind)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-zinc-500 dark:text-zinc-400">
-                {clientNameLabel(clientKind)}
-              </dt>
-              <dd className="text-zinc-900 dark:text-zinc-50">{client.name}</dd>
-            </div>
-            <div>
-              <dt className="text-zinc-500 dark:text-zinc-400">
-                {clientTaxIdLabel(clientKind)}
-              </dt>
-              <dd className="text-zinc-900 dark:text-zinc-50">{client.tax_id ?? "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-zinc-500 dark:text-zinc-400">Email</dt>
-              <dd className="text-zinc-900 dark:text-zinc-50">{client.email ?? "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-zinc-500 dark:text-zinc-400">Teléfono</dt>
-              <dd className="text-zinc-900 dark:text-zinc-50">{client.phone ?? "—"}</dd>
-            </div>
-          </dl>
-          <dl className="space-y-2 text-sm">
-            <div>
-              <dt className="text-zinc-500 dark:text-zinc-400">Domicilio fiscal</dt>
-              <dd className="whitespace-pre-wrap text-zinc-900 dark:text-zinc-50">
-                {client.address ?? "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-zinc-500 dark:text-zinc-400">Notas</dt>
-              <dd className="whitespace-pre-wrap text-zinc-900 dark:text-zinc-50">
-                {client.notes ?? "—"}
-              </dd>
-            </div>
-          </dl>
-        </div>
-
         {isEditing ? (
           <div id="editar-cliente">
             <ClientEditForm client={client} />
           </div>
-        ) : null}
+        ) : (
+          <div className="grid gap-6 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 sm:grid-cols-2">
+            <dl className="space-y-2 text-sm">
+              <div>
+                <dt className="text-zinc-500 dark:text-zinc-400">Tipo</dt>
+                <dd className="text-zinc-900 dark:text-zinc-50">
+                  {clientKindLabel(clientKind)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-zinc-500 dark:text-zinc-400">
+                  {clientNameLabel(clientKind)}
+                </dt>
+                <dd className="text-zinc-900 dark:text-zinc-50">{client.name}</dd>
+              </div>
+              <div>
+                <dt className="text-zinc-500 dark:text-zinc-400">
+                  {clientTaxIdLabel(clientKind)}
+                </dt>
+                <dd className="text-zinc-900 dark:text-zinc-50">{client.tax_id ?? "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-zinc-500 dark:text-zinc-400">Email</dt>
+                <dd className="text-zinc-900 dark:text-zinc-50">{client.email ?? "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-zinc-500 dark:text-zinc-400">Teléfono</dt>
+                <dd className="text-zinc-900 dark:text-zinc-50">{client.phone ?? "—"}</dd>
+              </div>
+            </dl>
+            <dl className="space-y-2 text-sm">
+              <div>
+                <dt className="text-zinc-500 dark:text-zinc-400">Domicilio fiscal</dt>
+                <dd className="whitespace-pre-wrap text-zinc-900 dark:text-zinc-50">
+                  {client.address ?? "—"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-zinc-500 dark:text-zinc-400">Notas</dt>
+                <dd className="whitespace-pre-wrap text-zinc-900 dark:text-zinc-50">
+                  {client.notes ?? "—"}
+                </dd>
+              </div>
+            </dl>
+          </div>
+        )}
 
 
         <section>
