@@ -106,7 +106,7 @@ export async function updateClientAction(
   revalidatePath("/clients");
   revalidatePath(`/clients/${id}`);
   revalidatePath("/invoices");
-  return { ok: true };
+  redirect(`/clients/${id}?saved=1`);
 }
 
 function emptyToNull(v: FormDataEntryValue | null) {

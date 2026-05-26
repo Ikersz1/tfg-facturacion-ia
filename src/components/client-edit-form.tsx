@@ -63,12 +63,6 @@ export function ClientEditForm({
           {state.error}
         </p>
       ) : null}
-      {state?.ok ? (
-        <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100">
-          Cliente actualizado.
-        </p>
-      ) : null}
-
       <fieldset className="flex flex-col gap-2 rounded-md border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-800/40">
         <legend className="px-0.5 text-sm font-medium text-zinc-800 dark:text-zinc-200">
           Tipo de cliente

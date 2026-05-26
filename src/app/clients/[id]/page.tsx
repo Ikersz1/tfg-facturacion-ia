@@ -36,6 +36,7 @@ export default async function ClientDetailPage({ params, searchParams }: PagePro
   const { id } = await params;
   const sp = await searchParams;
   const isEditing = sp.edit === "1";
+  const saved = sp.saved === "1";
   const supabase = await createClient();
 
   const { data: client, error: cErr } = await supabase
@@ -112,6 +113,15 @@ export default async function ClientDetailPage({ params, searchParams }: PagePro
             `Genera un recordatorio de cobro para ${client.name}`,
           ]}
         />
+
+        {saved && !isEditing ? (
+          <p
+            className="rounded-md bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100"
+            role="status"
+          >
+            Cliente actualizado correctamente.
+          </p>
+        ) : null}
 
         {isEditing ? (
           <div id="editar-cliente">
