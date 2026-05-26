@@ -1,5 +1,6 @@
 "use server";
 
+import { passwordResetRedirectUrl } from "@/lib/auth-site-url";
 import { createClient } from "@/lib/supabase/server";
 import { validateRegistrationEmail } from "@/lib/validate-registration-email";
 import { redirect } from "next/navigation";
@@ -7,6 +8,10 @@ import { redirect } from "next/navigation";
 export type AuthState = { error?: string };
 
 export type RegisterState = { error?: string; success?: string };
+
+export type ForgotPasswordState = { error?: string; success?: string };
+
+export type UpdatePasswordState = { error?: string };
 
 function isAuthRateLimitError(message: string): boolean {
   const m = message.toLowerCase();
@@ -117,4 +122,75 @@ export async function logoutAction(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/login");
+}
+
+export async function forgotPasswordAction(
+  _prev: ForgotPasswordState,
+  formData: FormData,
+): Promise<ForgotPasswordState> {
+  const email = formData.get("email")?.toString().trim();
+  if (!email) {
+    return { error: "Introduce el email de tu cuenta." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: passwordResetRedirectUrl(),
+  });
+
+  if (error) {
+    const msg = error.message.toLowerCase();
+    if (isAuthRateLimitError(msg)) {
+      return {
+        error:
+          "Demasiados intentos seguidos. Espera unos minutos antes de volver a solicitar el enlace.",
+      };
+    }
+    return {
+      error: `No se pudo enviar el correo: ${error.message}`,
+    };
+  }
+
+  return {
+    success:
+      "Si existe una cuenta con ese email, recibirás un enlace para restablecer la contraseña. Revisa también la carpeta de spam.",
+  };
+}
+
+export async function updatePasswordAction(
+  _prev: UpdatePasswordState,
+  formData: FormData,
+): Promise<UpdatePasswordState> {
+  const password = formData.get("password")?.toString();
+  const confirmPassword = formData.get("confirmPassword")?.toString();
+
+  if (!password || !confirmPassword) {
+    return { error: "Introduce y confirma la nueva contraseña." };
+  }
+  if (password !== confirmPassword) {
+    return { error: "Las contraseñas no coinciden." };
+  }
+  if (password.length < 6) {
+    return { error: "La contraseña debe tener al menos 6 caracteres." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      error:
+        "El enlace no es válido o ha caducado. Solicita uno nuevo desde «¿Olvidaste tu contraseña?».",
+    };
+  }
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) {
+    return { error: error.message };
+  }
+
+  await supabase.auth.signOut();
+  redirect("/login?reset=1");
 }

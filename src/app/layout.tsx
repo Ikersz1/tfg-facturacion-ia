@@ -32,7 +32,13 @@ export default async function RootLayout({
 
   const headersList = await headers();
   const pathname = headersList.get("x-pathname") ?? "";
-  const isAuthPage = pathname === "/login" || pathname === "/register";
+  const authPages = new Set([
+    "/login",
+    "/register",
+    "/forgot-password",
+    "/reset-password",
+  ]);
+  const isAuthPage = authPages.has(pathname);
 
   return (
     <html

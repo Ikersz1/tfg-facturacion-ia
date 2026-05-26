@@ -1,48 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useActionState } from "react";
-import { useSearchParams } from "next/navigation";
-import { loginAction, type AuthState } from "@/app/actions/auth";
+import { useActionState } from "react";
+import {
+  updatePasswordAction,
+  type UpdatePasswordState,
+} from "@/app/actions/auth";
 
-const initial: AuthState = {};
+const initial: UpdatePasswordState = {};
 
-function LoginAlerts() {
-  const searchParams = useSearchParams();
-  const reset = searchParams.get("reset");
-  const authError = searchParams.get("error");
-
-  if (reset === "1") {
-    return (
-      <p
-        role="status"
-        className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100"
-      >
-        Contraseña actualizada. Ya puedes iniciar sesión.
-      </p>
-    );
-  }
-
-  if (authError === "auth_callback") {
-    return (
-      <p
-        role="alert"
-        className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/50 dark:text-red-200"
-      >
-        El enlace de recuperación no es válido o ha caducado.{" "}
-        <Link href="/forgot-password" className="font-medium underline">
-          Solicita uno nuevo
-        </Link>
-        .
-      </p>
-    );
-  }
-
-  return null;
-}
-
-export default function LoginPage() {
-  const [state, formAction, pending] = useActionState(loginAction, initial);
+export default function ResetPasswordPage() {
+  const [state, formAction, pending] = useActionState(updatePasswordAction, initial);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-4 dark:bg-zinc-950">
@@ -55,19 +23,20 @@ export default function LoginPage() {
               viewBox="0 0 24 24"
               stroke="currentColor"
               strokeWidth={1.75}
+              aria-hidden
             >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
+                d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z"
               />
             </svg>
           </div>
           <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-            Facturación IA
+            Nueva contraseña
           </h1>
           <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-            Inicia sesión para acceder al panel
+            Elige una contraseña nueva para tu cuenta
           </p>
         </div>
 
@@ -75,46 +44,48 @@ export default function LoginPage() {
           action={formAction}
           className="flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900"
         >
-          <Suspense fallback={null}>
-            <LoginAlerts />
-          </Suspense>
-
           {state?.error ? (
             <p
               role="alert"
               className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/50 dark:text-red-200"
             >
               {state.error}
+              {state.error.includes("caducado") || state.error.includes("válido") ? (
+                <>
+                  {" "}
+                  <Link href="/forgot-password" className="font-medium underline">
+                    Solicitar nuevo enlace
+                  </Link>
+                </>
+              ) : null}
             </p>
           ) : null}
 
           <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium text-zinc-700 dark:text-zinc-300">Email</span>
-            <input
-              name="email"
-              type="email"
-              required
-              autoComplete="email"
-              placeholder="tu@email.com"
-              className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 outline-none transition focus:ring-2 focus:ring-brand/40 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder:text-zinc-500"
-            />
-          </label>
-
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="flex items-center justify-between gap-2 font-medium text-zinc-700 dark:text-zinc-300">
-              <span>Contraseña</span>
-              <Link
-                href="/forgot-password"
-                className="text-xs font-normal text-brand hover:underline"
-              >
-                ¿Olvidaste tu contraseña?
-              </Link>
+            <span className="font-medium text-zinc-700 dark:text-zinc-300">
+              Nueva contraseña
             </span>
             <input
               name="password"
               type="password"
               required
-              autoComplete="current-password"
+              minLength={6}
+              autoComplete="new-password"
+              placeholder="Mínimo 6 caracteres"
+              className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 outline-none transition focus:ring-2 focus:ring-brand/40 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder:text-zinc-500"
+            />
+          </label>
+
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="font-medium text-zinc-700 dark:text-zinc-300">
+              Repetir contraseña
+            </span>
+            <input
+              name="confirmPassword"
+              type="password"
+              required
+              minLength={6}
+              autoComplete="new-password"
               placeholder="••••••••"
               className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 outline-none transition focus:ring-2 focus:ring-brand/40 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-50 dark:placeholder:text-zinc-500"
             />
@@ -125,16 +96,15 @@ export default function LoginPage() {
             disabled={pending}
             className="mt-1 inline-flex h-10 items-center justify-center rounded-lg bg-brand px-4 text-sm font-medium text-brand-fg transition hover:bg-brand-hover disabled:opacity-60"
           >
-            {pending ? "Entrando…" : "Iniciar sesión"}
+            {pending ? "Guardando…" : "Guardar contraseña"}
           </button>
 
           <p className="text-center text-sm text-zinc-500 dark:text-zinc-400">
-            ¿No tienes cuenta?{" "}
             <Link
-              href="/register"
+              href="/login"
               className="font-medium text-brand hover:underline dark:text-brand"
             >
-              Registrarse
+              Volver a iniciar sesión
             </Link>
           </p>
         </form>
