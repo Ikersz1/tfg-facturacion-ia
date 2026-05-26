@@ -1,6 +1,6 @@
 "use server";
 
-import { passwordResetRedirectUrl } from "@/lib/auth-site-url";
+import { oauthCallbackRedirectUrl, passwordResetRedirectUrl } from "@/lib/auth-site-url";
 import { createClient } from "@/lib/supabase/server";
 import { validateRegistrationEmail } from "@/lib/validate-registration-email";
 import { redirect } from "next/navigation";
@@ -95,6 +95,26 @@ export async function registerAction(
     success:
       "Cuenta creada. Revisa tu correo (incluido spam) para activarla antes de iniciar sesión.",
   };
+}
+
+export async function signInWithGoogleAction(formData: FormData): Promise<void> {
+  const errorPath = formData.get("errorPath")?.toString() || "/login";
+  const safeErrorPath =
+    errorPath.startsWith("/") && !errorPath.startsWith("//") ? errorPath : "/login";
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: oauthCallbackRedirectUrl("/"),
+    },
+  });
+
+  if (error || !data.url) {
+    redirect(`${safeErrorPath}?error=google`);
+  }
+
+  redirect(data.url);
 }
 
 export async function loginAction(

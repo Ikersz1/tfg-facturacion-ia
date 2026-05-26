@@ -1,10 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { Suspense, useActionState } from "react";
+import { useSearchParams } from "next/navigation";
 import { registerAction, type RegisterState } from "@/app/actions/auth";
+import { GoogleSignInSection } from "@/components/google-sign-in-button";
 
 const initial: RegisterState = {};
+
+function RegisterAlerts() {
+  const authError = useSearchParams().get("error");
+  if (authError !== "google") return null;
+  return (
+    <p
+      role="alert"
+      className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/50 dark:text-red-200"
+    >
+      No se pudo registrarse con Google. Comprueba que Google esté activado en
+      Supabase (Authentication → Providers).
+    </p>
+  );
+}
 
 export default function RegisterPage() {
   const [state, formAction, pending] = useActionState(registerAction, initial);
@@ -36,10 +52,16 @@ export default function RegisterPage() {
           </p>
         </div>
 
-        <form
-          action={formAction}
-          className="flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900"
-        >
+        <div className="flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+          <Suspense fallback={null}>
+            <RegisterAlerts />
+          </Suspense>
+          <GoogleSignInSection
+            errorPath="/register"
+            label="Registrarse con Google"
+          />
+
+        <form action={formAction} className="flex flex-col gap-4">
           {state?.error ? (
             <p
               role="alert"
@@ -114,6 +136,7 @@ export default function RegisterPage() {
             </Link>
           </p>
         </form>
+        </div>
       </div>
     </div>
   );

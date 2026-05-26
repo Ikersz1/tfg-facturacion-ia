@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense, useActionState } from "react";
 import { useSearchParams } from "next/navigation";
 import { loginAction, type AuthState } from "@/app/actions/auth";
+import { GoogleSignInSection } from "@/components/google-sign-in-button";
 
 const initial: AuthState = {};
 
@@ -34,6 +35,18 @@ function LoginAlerts() {
           Solicita uno nuevo
         </Link>
         .
+      </p>
+    );
+  }
+
+  if (authError === "google") {
+    return (
+      <p
+        role="alert"
+        className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/50 dark:text-red-200"
+      >
+        No se pudo iniciar sesión con Google. Comprueba que Google esté activado en
+        Supabase (Authentication → Providers).
       </p>
     );
   }
@@ -71,14 +84,14 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <form
-          action={formAction}
-          className="flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900"
-        >
+        <div className="flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
           <Suspense fallback={null}>
             <LoginAlerts />
           </Suspense>
 
+          <GoogleSignInSection errorPath="/login" label="Iniciar sesión con Google" />
+
+        <form action={formAction} className="flex flex-col gap-4">
           {state?.error ? (
             <p
               role="alert"
@@ -138,6 +151,7 @@ export default function LoginPage() {
             </Link>
           </p>
         </form>
+        </div>
       </div>
     </div>
   );

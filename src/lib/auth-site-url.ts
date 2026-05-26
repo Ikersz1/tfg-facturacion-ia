@@ -13,3 +13,9 @@ export function passwordResetRedirectUrl(): string {
   const base = getAuthSiteUrl();
   return `${base}/auth/callback?next=${encodeURIComponent("/reset-password")}`;
 }
+
+export function oauthCallbackRedirectUrl(next = "/"): string {
+  const base = getAuthSiteUrl();
+  const path = next.startsWith("/") && !next.startsWith("//") ? next : "/";
+  return `${base}/auth/callback?next=${encodeURIComponent(path)}`;
+}
