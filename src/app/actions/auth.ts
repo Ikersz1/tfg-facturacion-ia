@@ -1,8 +1,15 @@
 "use server";
 
 import { oauthCallbackRedirectUrl, passwordResetRedirectUrl } from "@/lib/auth-site-url";
+import {
+  OAUTH_INTENT_COOKIE,
+  OAUTH_STARTED_COOKIE,
+  oauthIntentCookieOptions,
+  parseOAuthIntent,
+} from "@/lib/oauth-intent";
 import { createClient } from "@/lib/supabase/server";
 import { validateRegistrationEmail } from "@/lib/validate-registration-email";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 export type AuthState = { error?: string };
@@ -101,6 +108,12 @@ export async function signInWithGoogleAction(formData: FormData): Promise<void> 
   const errorPath = formData.get("errorPath")?.toString() || "/login";
   const safeErrorPath =
     errorPath.startsWith("/") && !errorPath.startsWith("//") ? errorPath : "/login";
+  const intent = parseOAuthIntent(formData.get("intent")?.toString());
+
+  const cookieStore = await cookies();
+  const cookieOpts = oauthIntentCookieOptions();
+  cookieStore.set(OAUTH_INTENT_COOKIE, intent, cookieOpts);
+  cookieStore.set(OAUTH_STARTED_COOKIE, new Date().toISOString(), cookieOpts);
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithOAuth({

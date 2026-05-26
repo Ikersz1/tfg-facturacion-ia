@@ -51,6 +51,21 @@ function LoginAlerts() {
     );
   }
 
+  if (authError === "no_account") {
+    return (
+      <p
+        role="alert"
+        className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800 dark:bg-red-950/50 dark:text-red-200"
+      >
+        No hay cuenta con ese Google.{" "}
+        <Link href="/register" className="font-medium underline">
+          Regístrate primero
+        </Link>{" "}
+        o usa email y contraseña.
+      </p>
+    );
+  }
+
   return null;
 }
 
@@ -89,7 +104,11 @@ export default function LoginPage() {
             <LoginAlerts />
           </Suspense>
 
-          <GoogleSignInSection errorPath="/login" label="Iniciar sesión con Google" />
+          <GoogleSignInSection
+            errorPath="/login"
+            intent="login"
+            label="Iniciar sesión con Google"
+          />
 
         <form action={formAction} className="flex flex-col gap-4">
           {state?.error ? (

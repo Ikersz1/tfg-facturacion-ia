@@ -58,6 +58,7 @@ export default function RegisterPage() {
           </Suspense>
           <GoogleSignInSection
             errorPath="/register"
+            intent="signup"
             label="Registrarse con Google"
           />
 

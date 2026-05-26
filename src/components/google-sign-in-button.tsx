@@ -1,17 +1,21 @@
 import { signInWithGoogleAction } from "@/app/actions/auth";
+import type { OAuthIntent } from "@/lib/oauth-intent";
 
 type Props = {
   errorPath?: string;
+  intent?: OAuthIntent;
   label?: string;
 };
 
 export function GoogleSignInButton({
   errorPath = "/login",
+  intent = "login",
   label = "Continuar con Google",
 }: Props) {
   return (
     <form action={signInWithGoogleAction}>
       <input type="hidden" name="errorPath" value={errorPath} />
+      <input type="hidden" name="intent" value={intent} />
       <button
         type="submit"
         className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-800 shadow-sm transition hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
@@ -66,11 +70,12 @@ function AuthDivider() {
 
 export function GoogleSignInSection({
   errorPath = "/login",
+  intent = "login",
   label,
 }: Props) {
   return (
     <div className="flex flex-col gap-4">
-      <GoogleSignInButton errorPath={errorPath} label={label} />
+      <GoogleSignInButton errorPath={errorPath} intent={intent} label={label} />
       <AuthDivider />
     </div>
   );
