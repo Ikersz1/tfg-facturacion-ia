@@ -2,7 +2,11 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { requireAuthUserId } from "@/lib/supabase/require-auth-user";
-import { lineAmounts, roundCurrencyEUR } from "@/lib/money";
+import {
+  buildInvoiceIssuedN8nPayload,
+  notifyInvoiceIssued,
+} from "@/lib/n8n/notify-invoice-issued";
+import { lineAmounts, formatMoneyEUR, roundCurrencyEUR } from "@/lib/money";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -163,7 +167,7 @@ export async function issueInvoiceAction(
 
   const { data: invoice, error: invErr } = await supabase
     .from("invoices")
-    .select("id, status, series, year, client_id, clients ( name, tax_id, address )")
+    .select("id, status, series, year, client_id, clients ( name, tax_id, address, email )")
     .eq("id", invoiceId)
     .single();
 
@@ -349,6 +353,47 @@ export async function issueInvoiceAction(
     }
   }
 
+  const n8nPayload = buildInvoiceIssuedN8nPayload({
+    invoiceId,
+    series: refreshed.series as string,
+    year: refreshed.year as number,
+    number: num,
+    issueDate,
+    dueDate: due_date,
+    subtotal: Number(refreshed.subtotal),
+    taxAmount: Number(refreshed.tax_amount),
+    total: Number(refreshed.total),
+    totalFormatted: formatMoneyEUR(refreshed.total),
+    clientId,
+    clientName: clientRow!.name,
+    clientEmail: clientRow!.email,
+    clientTaxId: clientRow!.tax_id,
+    clientAddress: clientRow!.address,
+    issuerLegalName: fiscal.legal_name.trim(),
+    issuerTaxId: fiscal.tax_id.trim(),
+    issuerAddress: fiscal.address.trim(),
+  });
+
+  const n8nResult = await notifyInvoiceIssued(n8nPayload);
+  if (n8nResult.ok) {
+    await supabase.from("invoice_events").insert({
+      invoice_id: invoiceId,
+      event_type: "n8n_webhook_sent",
+      payload: { status: n8nResult.status },
+    });
+  } else if (n8nResult.error !== "not_configured") {
+    const n8nMsg = `Factura emitida, pero n8n no respondió: ${n8nResult.error}`;
+    warn = warn ? `${warn} ${n8nMsg}` : n8nMsg;
+    await supabase.from("invoice_events").insert({
+      invoice_id: invoiceId,
+      event_type: "n8n_webhook_error",
+      payload: {
+        status: n8nResult.status ?? null,
+        message: n8nResult.error.slice(0, 500),
+      },
+    });
+  }
+
   revalidatePath(`/invoices/${invoiceId}`);
   revalidatePath("/invoices");
   return warn ? { ok: true, warn } : { ok: true };
@@ -472,6 +517,7 @@ function normalizeInvoiceClient(raw: unknown): {
   name: string;
   tax_id: string | null;
   address: string | null;
+  email: string | null;
 } | null {
   if (!raw) return null;
   if (Array.isArray(raw)) {
@@ -481,23 +527,27 @@ function normalizeInvoiceClient(raw: unknown): {
       name?: string | null;
       tax_id?: string | null;
       address?: string | null;
+      email?: string | null;
     };
     return {
       name: String(o.name ?? "").trim(),
       tax_id: o.tax_id?.trim() ? o.tax_id.trim() : null,
       address: o.address?.trim() ? o.address.trim() : null,
+      email: o.email?.trim() ? o.email.trim() : null,
     };
   }
   if (typeof raw === "object") {
     const o = raw as {
       name?: string | null;
       tax_id?: string | null;
+      email?: string | null;
       address?: string | null;
     };
     return {
       name: String(o.name ?? "").trim(),
       tax_id: o.tax_id?.trim() ? o.tax_id.trim() : null,
       address: o.address?.trim() ? o.address.trim() : null,
+      email: o.email?.trim() ? o.email.trim() : null,
     };
   }
   return null;

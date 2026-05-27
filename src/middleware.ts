@@ -48,6 +48,7 @@ export async function middleware(request: NextRequest) {
   const isPublic =
     PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`)) ||
     pathname.startsWith("/auth/") ||
+    pathname.startsWith("/api/integrations/n8n/") ||
     pathname === "/api/cron/verifacti-status" ||
     pathname.startsWith("/api/cron/verifacti-status/");
 

@@ -18,6 +18,9 @@ En el proyecto Vercel: **Settings → Environment Variables**, añade las mismas
 | `OPENAI_API_KEY` | Opcional | Asistente en `/asistente`: enrutado de preguntas y redacción. Sin ella, el asistente usa reglas locales. |
 | `OPENAI_MODEL` | Opcional | Por defecto `gpt-4o-mini`. |
 | `ASSISTANT_SKIP_POLISH` | Opcional | Si es `1`, no se llama al LLM para redactar (solo datos + plantillas). |
+| `N8N_INVOICE_ISSUED_WEBHOOK_URL` | Opcional | Webhook n8n al **emitir** factura. Ver `docs/n8n-flujo-1-factura-emitida.md`. |
+| `N8N_WEBHOOK_SECRET` | Opcional | `Bearer` compartido app ↔ n8n; necesario para descargar PDF desde n8n. |
+| `NEXT_PUBLIC_SITE_URL` | Recomendada | URL pública (`https://tu-app.vercel.app`) para enlaces y PDF en el payload. |
 
 El archivo `vercel.json` define un cron **una vez al día** (`0 6 * * *` → ~06:00 UTC; en Hobby la hora real puede variar ±59 min según [Vercel](https://vercel.com/docs/cron-jobs/usage-and-pricing)) contra `/api/cron/verifacti-status`, compatible con el plan **Hobby** (máximo una ejecución diaria). En **Pro** puedes acortar el intervalo si lo necesitas.
 
