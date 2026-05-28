@@ -12,7 +12,7 @@ En el proyecto Vercel: **Settings → Environment Variables**, añade las mismas
 |----------|---------|--------|
 | `NEXT_PUBLIC_SUPABASE_URL` | Production, Preview, Development | URL del proyecto en Supabase |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Igual | Clave `anon` `public` |
-| `SUPABASE_SERVICE_ROLE_KEY` | Opcional en local | **Obligatoria en Vercel** si activas el cron de estado Verifacti (usa cliente admin para leer/actualizar facturas sin sesión). El panel sigue usando solo `anon` + JWT. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Opcional en local | **Obligatoria en Vercel** si activas el cron de Verifacti o el endpoint de recordatorios de facturas vencidas (flujo 2 n8n). El panel sigue usando solo `anon` + JWT. |
 | `VERIFACTI_NIF_API_KEY` | Opcional | Clave NIF Verifacti (`vf_test_…` / `vf_prod_…`). |
 | `CRON_SECRET` | Opcional | Secreto largo aleatorio. Si está definido en Vercel, las invocaciones programadas de `/api/cron/verifacti-status` llevan `Authorization: Bearer <CRON_SECRET>`; la ruta rechaza peticiones sin coincidencia. |
 | `OPENAI_API_KEY` | Opcional | Asistente en `/asistente`: enrutado de preguntas y redacción. Sin ella, el asistente usa reglas locales. |

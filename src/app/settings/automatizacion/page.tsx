@@ -15,12 +15,24 @@ export default async function AutomationSettingsPage() {
 
   const { data: row, error } = await supabase
     .from("user_fiscal_profile")
-    .select("n8n_auto_email_on_issue")
+    .select(
+      "n8n_auto_email_on_issue, n8n_notify_issuer_on_overdue, n8n_auto_reminder_client, n8n_reminder_grace_days",
+    )
     .eq("user_id", user.id)
     .maybeSingle();
 
   const autoEmail = row?.n8n_auto_email_on_issue === true;
+  const notifyIssuerOnOverdue = row?.n8n_notify_issuer_on_overdue === true;
+  const autoReminderClient = row?.n8n_auto_reminder_client === true;
+  const graceDays = Math.max(1, Number(row?.n8n_reminder_grace_days) || 3);
+
   const webhookConfigured = isN8nIntegrationConfigured();
+  const secretConfigured = Boolean(process.env.N8N_WEBHOOK_SECRET?.trim());
+
+  const migrationMissing =
+    error?.message.includes("n8n_auto_email_on_issue") ||
+    error?.message.includes("n8n_notify_issuer_on_overdue") ||
+    error?.message.includes("n8n_reminder_grace_days");
 
   return (
     <div className="flex w-full flex-1 flex-col">
@@ -28,31 +40,30 @@ export default async function AutomationSettingsPage() {
         back={{ href: "/", ariaLabel: "Volver al inicio" }}
         eyebrow="Automatización"
         title="Integraciones (n8n)"
-        description="Controla si al emitir una factura se envía automáticamente el correo al cliente."
+        description="Controla el envío automático de emails al emitir facturas y los recordatorios de cobro."
       />
       <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
-        {error?.message.includes("n8n_auto_email_on_issue") ? (
+        {migrationMissing ? (
           <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
-            Falta aplicar la migración{" "}
-            <code className="rounded bg-red-100 px-1 dark:bg-red-900/60">
-              20260527190000_n8n_auto_email_on_issue.sql
-            </code>{" "}
-            en Supabase.
+            Falta aplicar alguna migración de n8n en Supabase. Consulta{" "}
+            <code className="rounded bg-red-100 px-1 dark:bg-red-900/60">supabase/migrations/</code>.
           </p>
         ) : null}
 
         <p className="max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
-          Cada usuario del panel tiene su propia preferencia. El flujo en n8n (webhook → descarga
-          PDF → Gmail) debe estar publicado en tu instancia de n8n. Consulta{" "}
-          <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">
-            docs/n8n-flujo-1-factura-emitida.md
-          </code>{" "}
-          en el repositorio.
+          Cada usuario del panel tiene sus propias preferencias. Los flujos en n8n deben estar
+          publicados en tu instancia. Consulta{" "}
+          <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">docs/</code> en el
+          repositorio para la guía de configuración de cada flujo.
         </p>
 
         <AutomationSettingsForm
           initialAutoEmail={autoEmail}
+          initialNotifyIssuerOnOverdue={notifyIssuerOnOverdue}
+          initialAutoReminderClient={autoReminderClient}
+          initialGraceDays={graceDays}
           webhookConfigured={webhookConfigured}
+          secretConfigured={secretConfigured}
         />
       </div>
     </div>

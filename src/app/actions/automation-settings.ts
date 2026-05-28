@@ -10,7 +10,11 @@ export async function updateAutomationSettingsAction(
   _prev: AutomationSettingsState,
   formData: FormData,
 ): Promise<AutomationSettingsState> {
-  const enabled = formData.get("n8n_auto_email_on_issue") === "on";
+  const autoEmailOnIssue = formData.get("n8n_auto_email_on_issue") === "on";
+  const notifyIssuerOnOverdue = formData.get("n8n_notify_issuer_on_overdue") === "on";
+  const autoReminderClient = formData.get("n8n_auto_reminder_client") === "on";
+  const graceDaysRaw = Number(formData.get("n8n_reminder_grace_days") ?? "3");
+  const graceDays = Number.isFinite(graceDaysRaw) ? Math.max(1, Math.min(30, graceDaysRaw)) : 3;
 
   const supabase = await createClient();
   const auth = await requireAuthUserId(supabase);
@@ -32,16 +36,24 @@ export async function updateAutomationSettingsAction(
   const { error } = await supabase
     .from("user_fiscal_profile")
     .update({
-      n8n_auto_email_on_issue: enabled,
+      n8n_auto_email_on_issue: autoEmailOnIssue,
+      n8n_notify_issuer_on_overdue: notifyIssuerOnOverdue,
+      n8n_auto_reminder_client: autoReminderClient,
+      n8n_reminder_grace_days: graceDays,
       updated_at: new Date().toISOString(),
     })
     .eq("user_id", auth.userId);
 
   if (error) {
-    if (error.message.includes("n8n_auto_email_on_issue")) {
+    if (
+      error.message.includes("n8n_auto_email_on_issue") ||
+      error.message.includes("n8n_notify_issuer_on_overdue") ||
+      error.message.includes("n8n_auto_reminder_client") ||
+      error.message.includes("n8n_reminder_grace_days")
+    ) {
       return {
         error:
-          "Falta la migración 20260527190000_n8n_auto_email_on_issue.sql en Supabase.",
+          "Falta aplicar la migración 20260528120000_n8n_overdue_reminders.sql en Supabase.",
       };
     }
     return { error: error.message };
