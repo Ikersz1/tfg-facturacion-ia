@@ -13,6 +13,15 @@ Cuando en la app se **emite** una factura (de borrador a emitida), el servidor h
 
 Sin `N8N_INVOICE_ISSUED_WEBHOOK_URL` la factura se emite igual; no se llama a n8n.
 
+## Preferencia por usuario (panel)
+
+En **Ajustes → Automatización** (`/settings/automatizacion`) cada usuario puede activar o desactivar **«Enviar factura por email al emitir»**.
+
+- **Activado:** al emitir se llama al webhook (si el servidor tiene `N8N_INVOICE_ISSUED_WEBHOOK_URL`).
+- **Desactivado:** la factura se emite con normalidad pero **no** se dispara n8n.
+
+Migración: `20260527190000_n8n_auto_email_on_issue.sql` (columna `n8n_auto_email_on_issue` en `user_fiscal_profile`).
+
 ## 2. Workflow en n8n (pasos)
 
 1. **Webhook**

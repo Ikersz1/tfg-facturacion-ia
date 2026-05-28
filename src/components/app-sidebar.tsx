@@ -37,7 +37,7 @@ const SECTIONS: { title: string; items: NavItem[] }[] = [
   },
   {
     title: "Automatización",
-    items: [{ label: "Integraciones (n8n)", soon: true, icon: "zap" }],
+    items: [{ label: "Integraciones (n8n)", href: "/settings/automatizacion", icon: "zap" }],
   },
   {
     title: "Cuenta",

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 const LINKS = [
   { href: "/settings/fiscal", label: "Datos fiscales" },
+  { href: "/settings/automatizacion", label: "Automatización" },
   { href: "/settings/asistente", label: "Asistente IA" },
 ] as const;
 

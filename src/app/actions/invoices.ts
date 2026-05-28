@@ -179,7 +179,7 @@ export async function issueInvoiceAction(
 
   const { data: fiscal } = await supabase
     .from("user_fiscal_profile")
-    .select("legal_name, tax_id, address")
+    .select("legal_name, tax_id, address, n8n_auto_email_on_issue")
     .eq("user_id", auth.userId)
     .maybeSingle();
 
@@ -353,45 +353,47 @@ export async function issueInvoiceAction(
     }
   }
 
-  const n8nPayload = buildInvoiceIssuedN8nPayload({
-    invoiceId,
-    series: refreshed.series as string,
-    year: refreshed.year as number,
-    number: num,
-    issueDate,
-    dueDate: due_date,
-    subtotal: Number(refreshed.subtotal),
-    taxAmount: Number(refreshed.tax_amount),
-    total: Number(refreshed.total),
-    totalFormatted: formatMoneyEUR(refreshed.total),
-    clientId,
-    clientName: clientRow!.name,
-    clientEmail: clientRow!.email,
-    clientTaxId: clientRow!.tax_id,
-    clientAddress: clientRow!.address,
-    issuerLegalName: fiscal.legal_name.trim(),
-    issuerTaxId: fiscal.tax_id.trim(),
-    issuerAddress: fiscal.address.trim(),
-  });
+  if (fiscal.n8n_auto_email_on_issue === true) {
+    const n8nPayload = buildInvoiceIssuedN8nPayload({
+      invoiceId,
+      series: refreshed.series as string,
+      year: refreshed.year as number,
+      number: num,
+      issueDate,
+      dueDate: due_date,
+      subtotal: Number(refreshed.subtotal),
+      taxAmount: Number(refreshed.tax_amount),
+      total: Number(refreshed.total),
+      totalFormatted: formatMoneyEUR(refreshed.total),
+      clientId,
+      clientName: clientRow!.name,
+      clientEmail: clientRow!.email,
+      clientTaxId: clientRow!.tax_id,
+      clientAddress: clientRow!.address,
+      issuerLegalName: fiscal.legal_name.trim(),
+      issuerTaxId: fiscal.tax_id.trim(),
+      issuerAddress: fiscal.address.trim(),
+    });
 
-  const n8nResult = await notifyInvoiceIssued(n8nPayload);
-  if (n8nResult.ok) {
-    await supabase.from("invoice_events").insert({
-      invoice_id: invoiceId,
-      event_type: "n8n_webhook_sent",
-      payload: { status: n8nResult.status },
-    });
-  } else if (n8nResult.error !== "not_configured") {
-    const n8nMsg = `Factura emitida, pero n8n no respondió: ${n8nResult.error}`;
-    warn = warn ? `${warn} ${n8nMsg}` : n8nMsg;
-    await supabase.from("invoice_events").insert({
-      invoice_id: invoiceId,
-      event_type: "n8n_webhook_error",
-      payload: {
-        status: n8nResult.status ?? null,
-        message: n8nResult.error.slice(0, 500),
-      },
-    });
+    const n8nResult = await notifyInvoiceIssued(n8nPayload);
+    if (n8nResult.ok) {
+      await supabase.from("invoice_events").insert({
+        invoice_id: invoiceId,
+        event_type: "n8n_webhook_sent",
+        payload: { status: n8nResult.status },
+      });
+    } else if (n8nResult.error !== "not_configured") {
+      const n8nMsg = `Factura emitida, pero el email automático no se envió: ${n8nResult.error}`;
+      warn = warn ? `${warn} ${n8nMsg}` : n8nMsg;
+      await supabase.from("invoice_events").insert({
+        invoice_id: invoiceId,
+        event_type: "n8n_webhook_error",
+        payload: {
+          status: n8nResult.status ?? null,
+          message: n8nResult.error.slice(0, 500),
+        },
+      });
+    }
   }
 
   revalidatePath(`/invoices/${invoiceId}`);
