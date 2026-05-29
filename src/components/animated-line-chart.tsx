@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useRef, useState } from "react";
+import { formatMoneyEUR } from "@/lib/money";
 
 export type LinePoint = { label: string; value: number };
 export type LineSeries = { id: string; name: string; color: string; points: LinePoint[] };
@@ -9,7 +10,6 @@ type Props = {
   series: LineSeries[];
   /** Relleno de área degradado bajo la primera serie. */
   area?: boolean;
-  formatValue?: (n: number) => string;
   /** Altura del área de dibujo. */
   heightClassName?: string;
   emptyMessage?: string;
@@ -50,7 +50,6 @@ function smoothPath(coords: { x: number; y: number }[]): string {
 export function AnimatedLineChart({
   series,
   area = false,
-  formatValue = (n) => String(n),
   heightClassName = "h-56",
   emptyMessage = "Sin datos en este periodo.",
 }: Props) {
@@ -190,7 +189,7 @@ export function AnimatedLineChart({
                     <span className="h-2 w-2 rounded-full" style={{ backgroundColor: s.color }} />
                     <span className="text-zinc-500 dark:text-zinc-400">{s.name}</span>
                     <span className="ml-auto font-semibold text-zinc-900 dark:text-zinc-50">
-                      {formatValue(s.points[active]?.value ?? 0)}
+                      {formatMoneyEUR(s.points[active]?.value ?? 0)}
                     </span>
                   </p>
                 ))}

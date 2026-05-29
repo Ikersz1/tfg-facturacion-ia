@@ -78,7 +78,6 @@ function RevenueTrendCard({ months }: { months: MonthlyIncome[] }) {
           },
         ]}
         area
-        formatValue={formatMoneyEUR}
         heightClassName="h-48"
         emptyMessage="Sin datos en este rango."
       />
