@@ -1,6 +1,6 @@
 import "server-only";
 
-import { effectiveInvoiceStatus, todayLocalYMD } from "@/lib/invoice-status";
+import { effectiveInvoiceStatus, overdueReferenceYmd, todayLocalYMD } from "@/lib/invoice-status";
 import { formatYMD } from "@/lib/invoice-list-url";
 import { roundCurrencyEUR } from "@/lib/money";
 import { rangeLast12Months, rangeThisMonth, rangeThisWeek } from "@/lib/informes-range-presets";
@@ -10,7 +10,7 @@ import { createClient } from "@/lib/supabase/server";
 export type { ReportsResolvedFilters } from "@/lib/reports-query";
 export { buildReportsQueryString } from "@/lib/reports-query";
 
-export type TimePoint = { key: string; label: string; amount: number };
+export type TimePoint = { key: string; label: string; amount: number; collected: number };
 
 export type ClientRankingRow = {
   clientId: string;
@@ -29,20 +29,45 @@ export type ProductTopRow = {
   revenue: number;
 };
 
+/** Antigüedad de la deuda viva (importe pendiente por tramos de días vencidos). */
+export type AgingBucket = { id: string; label: string; amount: number };
+
+/**
+ * Valor de un KPI con su comparación al periodo inmediatamente anterior
+ * (mismo número de días justo antes de `from`).
+ * `changePct` es null cuando no hay base previa con la que comparar.
+ */
+export type KpiWithDelta = {
+  value: number;
+  previous: number;
+  changePct: number | null;
+};
+
 export type ReportsData = {
   filters: ReportsResolvedFilters;
+  /** true => la cuenta aún no tiene facturas reales; se muestran datos de ejemplo. */
+  isDemo: boolean;
   metrics: {
     billedInPeriod: number;
     collectedInPeriod: number;
     pendingNow: number;
     overdueNow: number;
     invoiceCountInPeriod: number;
+    /** KPIs analíticos del periodo con delta vs periodo anterior. */
+    billed: KpiWithDelta;
+    /** Tasa de cobro: cobrado / facturado (0–100). */
+    collectionRate: KpiWithDelta;
+    /** Días medios de cobro (DSO) ponderados por importe. */
+    dsoDays: KpiWithDelta;
+    /** Ticket medio = facturado / nº facturas. */
+    avgTicket: KpiWithDelta;
     /** Facturación mes calendario actual vs anterior (global). */
     billedThisCalendarMonth: number;
     billedPreviousCalendarMonth: number;
     pctChangeVsPreviousMonth: number | null;
   };
   timeSeries: TimePoint[];
+  aging: AgingBucket[];
   clientsRanking: ClientRankingRow[];
   statusDonut: DonutSegment[];
   topProducts: ProductTopRow[];
@@ -79,6 +104,91 @@ function inYmdRange(iso: string | null | undefined, from: string, to: string): b
   if (!iso) return false;
   const day = iso.slice(0, 10);
   return day >= from && day <= to;
+}
+
+/** Nº de días que abarca [from, to] (inclusivo). */
+function periodLengthDays(from: string, to: string): number {
+  const ms = parseYmd(to).getTime() - parseYmd(from).getTime();
+  return Math.max(1, Math.round(ms / 86_400_000) + 1);
+}
+
+/** Periodo inmediatamente anterior, de la misma longitud, justo antes de `from`. */
+function previousPeriod(from: string, to: string): { from: string; to: string } {
+  const len = periodLengthDays(from, to);
+  const prevTo = parseYmd(from);
+  prevTo.setDate(prevTo.getDate() - 1);
+  const prevFrom = new Date(prevTo);
+  prevFrom.setDate(prevFrom.getDate() - (len - 1));
+  return { from: ymd(prevFrom), to: ymd(prevTo) };
+}
+
+/** Variación porcentual; null si no hay base previa con la que comparar. */
+function pctChange(current: number, previous: number): number | null {
+  if (previous <= 0) return current > 0 ? 100 : null;
+  return roundCurrencyEUR(((current - previous) / previous) * 100);
+}
+
+function daysBetween(fromYmd: string, toYmd: string): number {
+  const ms = parseYmd(toYmd).getTime() - parseYmd(fromYmd).getTime();
+  return Math.round(ms / 86_400_000);
+}
+
+type InvoiceRow = {
+  id: string;
+  client_id: string;
+  total: number;
+  status: string;
+  issue_date: string | null;
+};
+
+type PaymentRow = { amount: number; paid_at: string | null };
+
+type PeriodAggregates = {
+  billed: number;
+  collected: number;
+  count: number;
+  /** Días medios de cobro ponderados por importe (0 si no hay cobros con fecha). */
+  dso: number;
+};
+
+/** Agregados de un periodo arbitrario, reutilizable para periodo actual y anterior. */
+function computePeriodAggregates(
+  invoices: InvoiceRow[],
+  paymentsByInvoice: Map<string, PaymentRow[]>,
+  from: string,
+  to: string,
+  clientId: string | null,
+): PeriodAggregates {
+  let billed = 0;
+  let collected = 0;
+  let count = 0;
+  let dsoWeighted = 0;
+  let dsoWeight = 0;
+
+  for (const inv of invoices) {
+    const st = inv.status;
+    if (st === "draft" || st === "cancelled") continue;
+    if (clientId && inv.client_id !== clientId) continue;
+    if (!inYmdRange(inv.issue_date, from, to)) continue;
+
+    billed = roundCurrencyEUR(billed + Number(inv.total));
+    count += 1;
+
+    const issue = (inv.issue_date ?? "").slice(0, 10);
+    const pays = paymentsByInvoice.get(inv.id) ?? [];
+    for (const p of pays) {
+      const amt = Number(p.amount);
+      collected = roundCurrencyEUR(collected + amt);
+      if (p.paid_at && issue) {
+        const d = Math.max(0, daysBetween(issue, p.paid_at.slice(0, 10)));
+        dsoWeighted += d * amt;
+        dsoWeight += amt;
+      }
+    }
+  }
+
+  const dso = dsoWeight > 0 ? Math.round(dsoWeighted / dsoWeight) : 0;
+  return { billed, collected, count, dso };
 }
 
 function startOfWeekMonday(d: Date): Date {
@@ -210,10 +320,19 @@ export async function getReportsData(sp: Record<string, string | string[] | unde
   }
 
   const paidByInvoice = new Map<string, number>();
+  const paymentsByInvoice = new Map<string, PaymentRow[]>();
   for (const p of payments) {
     const id = p.invoice_id as string;
     paidByInvoice.set(id, roundCurrencyEUR((paidByInvoice.get(id) ?? 0) + Number(p.amount)));
+    const list = paymentsByInvoice.get(id) ?? [];
+    list.push({ amount: Number(p.amount), paid_at: (p.paid_at as string | null) ?? null });
+    paymentsByInvoice.set(id, list);
   }
+
+  /** ¿La cuenta tiene alguna factura real (no borrador/anulada)? Decide demo vs datos reales. */
+  const hasAnyInvoices = invoices.some(
+    (inv) => inv.status !== "draft" && inv.status !== "cancelled",
+  );
 
   const invoiceById = new Map<string, (typeof invoices)[0]>();
   for (const inv of invoices) {
@@ -315,11 +434,22 @@ export async function getReportsData(sp: Record<string, string | string[] | unde
   const weekAmounts = new Map<string, number>();
   const dayAmounts = new Map<string, number>();
   const esteMesWeekAmounts = new Map<string, number>();
+  /** Cobrado por bucket (mismas claves que los *Amounts) para la serie Facturado vs Cobrado. */
+  const monthCollected = new Map<string, number>();
+  const weekCollected = new Map<string, number>();
+  const dayCollected = new Map<string, number>();
+  const esteMesWeekCollected = new Map<string, number>();
   if (weekDayKeys) {
-    for (const dk of weekDayKeys) dayAmounts.set(dk, 0);
+    for (const dk of weekDayKeys) {
+      dayAmounts.set(dk, 0);
+      dayCollected.set(dk, 0);
+    }
   }
   if (monthWeekKeys) {
-    for (const wk of monthWeekKeys) esteMesWeekAmounts.set(wk, 0);
+    for (const wk of monthWeekKeys) {
+      esteMesWeekAmounts.set(wk, 0);
+      esteMesWeekCollected.set(wk, 0);
+    }
   }
 
   for (const inv of invoices) {
@@ -329,18 +459,23 @@ export async function getReportsData(sp: Record<string, string | string[] | unde
     if (!issue || !inYmdRange(issue, from, to)) continue;
     if (!invMatchesClient(inv)) continue;
     const t = roundCurrencyEUR(Number(inv.total));
+    const c = roundCurrencyEUR(paidByInvoice.get(inv.id as string) ?? 0);
     const mk = issue.slice(0, 7);
     monthAmounts.set(mk, roundCurrencyEUR((monthAmounts.get(mk) ?? 0) + t));
+    monthCollected.set(mk, roundCurrencyEUR((monthCollected.get(mk) ?? 0) + c));
     const wk = weekKeyFromIssue(issue);
     weekAmounts.set(wk, roundCurrencyEUR((weekAmounts.get(wk) ?? 0) + t));
+    weekCollected.set(wk, roundCurrencyEUR((weekCollected.get(wk) ?? 0) + c));
     if (weekDayKeys) {
       const day = issue.slice(0, 10);
       if (dayAmounts.has(day)) {
         dayAmounts.set(day, roundCurrencyEUR((dayAmounts.get(day) ?? 0) + t));
+        dayCollected.set(day, roundCurrencyEUR((dayCollected.get(day) ?? 0) + c));
       }
     }
     if (monthWeekKeys && esteMesWeekAmounts.has(wk)) {
       esteMesWeekAmounts.set(wk, roundCurrencyEUR((esteMesWeekAmounts.get(wk) ?? 0) + t));
+      esteMesWeekCollected.set(wk, roundCurrencyEUR((esteMesWeekCollected.get(wk) ?? 0) + c));
     }
   }
 
@@ -351,19 +486,28 @@ export async function getReportsData(sp: Record<string, string | string[] | unde
     const amt = monthAmounts.get(mk) ?? 0;
     timeSeries =
       amt > 0
-        ? [{ key: `day:${from}`, label: labelSingleDay(from, todayYmd), amount: amt }]
+        ? [
+            {
+              key: `day:${from}`,
+              label: labelSingleDay(from, todayYmd),
+              amount: amt,
+              collected: monthCollected.get(mk) ?? 0,
+            },
+          ]
         : [];
   } else if (weekDayKeys) {
     timeSeries = weekDayKeys.map((d) => ({
       key: `day:${d}`,
       label: labelWeekDay(d, todayYmd),
       amount: dayAmounts.get(d) ?? 0,
+      collected: dayCollected.get(d) ?? 0,
     }));
   } else if (monthWeekKeys) {
     timeSeries = monthWeekKeys.map((wk) => ({
       key: `w:${wk}`,
       label: labelWeek(wk),
       amount: esteMesWeekAmounts.get(wk) ?? 0,
+      collected: esteMesWeekCollected.get(wk) ?? 0,
     }));
   } else if (granularity === "month") {
     const keys = [...monthAmounts.keys()].sort();
@@ -373,6 +517,7 @@ export async function getReportsData(sp: Record<string, string | string[] | unde
         key: k,
         label: labelMonth(k),
         amount: monthAmounts.get(k) ?? 0,
+        collected: monthCollected.get(k) ?? 0,
       }));
   } else {
     const keys = [...weekAmounts.keys()].sort();
@@ -382,6 +527,7 @@ export async function getReportsData(sp: Record<string, string | string[] | unde
         key: k,
         label: labelWeek(k),
         amount: weekAmounts.get(k) ?? 0,
+        collected: weekCollected.get(k) ?? 0,
       }));
   }
 
@@ -554,19 +700,94 @@ export async function getReportsData(sp: Record<string, string | string[] | unde
     lastQuarterBilled = roundCurrencyEUR(lastQuarterBilled + Number(inv.total));
   }
 
+  /** KPIs analíticos del periodo + comparación con el periodo anterior de igual longitud. */
+  const invoiceRows: InvoiceRow[] = invoices.map((inv) => ({
+    id: inv.id as string,
+    client_id: inv.client_id as string,
+    total: Number(inv.total),
+    status: inv.status as string,
+    issue_date: inv.issue_date as string | null,
+  }));
+  const prev = previousPeriod(from, to);
+  const curAgg = computePeriodAggregates(invoiceRows, paymentsByInvoice, from, to, clientId);
+  const prevAgg = computePeriodAggregates(invoiceRows, paymentsByInvoice, prev.from, prev.to, clientId);
+
+  const curRate = curAgg.billed > 0 ? roundCurrencyEUR((curAgg.collected / curAgg.billed) * 100) : 0;
+  const prevRate = prevAgg.billed > 0 ? roundCurrencyEUR((prevAgg.collected / prevAgg.billed) * 100) : 0;
+  const curTicket = curAgg.count > 0 ? roundCurrencyEUR(curAgg.billed / curAgg.count) : 0;
+  const prevTicket = prevAgg.count > 0 ? roundCurrencyEUR(prevAgg.billed / prevAgg.count) : 0;
+
+  const billedKpi: KpiWithDelta = {
+    value: curAgg.billed,
+    previous: prevAgg.billed,
+    changePct: pctChange(curAgg.billed, prevAgg.billed),
+  };
+  const collectionRateKpi: KpiWithDelta = {
+    value: curRate,
+    previous: prevRate,
+    changePct: pctChange(curRate, prevRate),
+  };
+  const dsoKpi: KpiWithDelta = {
+    value: curAgg.dso,
+    previous: prevAgg.dso,
+    changePct: pctChange(curAgg.dso, prevAgg.dso),
+  };
+  const avgTicketKpi: KpiWithDelta = {
+    value: curTicket,
+    previous: prevTicket,
+    changePct: pctChange(curTicket, prevTicket),
+  };
+
+  /** Aging: importe pendiente vivo (hoy) por antigüedad de días vencidos, respeta filtro de cliente. */
+  let aging0 = 0;
+  let aging30 = 0;
+  let aging60 = 0;
+  let aging90 = 0;
+  for (const inv of invoices) {
+    const st = inv.status as string;
+    if (st === "cancelled" || st === "draft" || st === "paid") continue;
+    if (!invMatchesClient(inv)) continue;
+    const total = roundCurrencyEUR(Number(inv.total));
+    const paid = roundCurrencyEUR(paidByInvoice.get(inv.id as string) ?? 0);
+    const out = roundCurrencyEUR(Math.max(0, total - paid));
+    if (out <= 0) continue;
+    const ref = overdueReferenceYmd(inv.issue_date as string | null, inv.due_date as string | null);
+    const overdueDays = ref ? Math.max(0, daysBetween(ref, todayYmd)) : 0;
+    if (overdueDays <= 30) aging0 = roundCurrencyEUR(aging0 + out);
+    else if (overdueDays <= 60) aging30 = roundCurrencyEUR(aging30 + out);
+    else if (overdueDays <= 90) aging60 = roundCurrencyEUR(aging60 + out);
+    else aging90 = roundCurrencyEUR(aging90 + out);
+  }
+  const aging: AgingBucket[] = [
+    { id: "0-30", label: "0–30 días", amount: aging0 },
+    { id: "31-60", label: "31–60 días", amount: aging30 },
+    { id: "61-90", label: "61–90 días", amount: aging60 },
+    { id: "90+", label: "+90 días", amount: aging90 },
+  ];
+
+  if (!hasAnyInvoices) {
+    return demoReportsData(filters);
+  }
+
   return {
     filters,
+    isDemo: false,
     metrics: {
       billedInPeriod,
       collectedInPeriod,
       pendingNow,
       overdueNow,
       invoiceCountInPeriod,
+      billed: billedKpi,
+      collectionRate: collectionRateKpi,
+      dsoDays: dsoKpi,
+      avgTicket: avgTicketKpi,
       billedThisCalendarMonth,
       billedPreviousCalendarMonth,
       pctChangeVsPreviousMonth,
     },
     timeSeries,
+    aging,
     clientsRanking,
     statusDonut,
     topProducts,
@@ -576,6 +797,75 @@ export async function getReportsData(sp: Record<string, string | string[] | unde
       topDebtClientName,
       topDebtAmount,
       lastQuarterBilled,
+    },
+  };
+}
+
+/** Datos de ejemplo para cuentas sin facturas: muestran cómo se verá el informe. */
+function demoReportsData(filters: ReportsResolvedFilters): ReportsData {
+  const months = ["ene", "feb", "mar", "abr", "may", "jun"];
+  const billedSeries = [1850, 2400, 2100, 3200, 2950, 3600];
+  const collectedSeries = [1850, 2200, 2100, 2600, 2300, 2400];
+  const timeSeries: TimePoint[] = months.map((label, i) => ({
+    key: `demo:${i}`,
+    label,
+    amount: billedSeries[i],
+    collected: collectedSeries[i],
+  }));
+  const billed = billedSeries.reduce((a, b) => a + b, 0);
+  const collected = collectedSeries.reduce((a, b) => a + b, 0);
+
+  return {
+    filters,
+    isDemo: true,
+    metrics: {
+      billedInPeriod: billed,
+      collectedInPeriod: collected,
+      pendingNow: 1900,
+      overdueNow: 650,
+      invoiceCountInPeriod: 18,
+      billed: { value: billed, previous: 12800, changePct: 24.5 },
+      collectionRate: {
+        value: roundCurrencyEUR((collected / billed) * 100),
+        previous: 78,
+        changePct: 5.1,
+      },
+      dsoDays: { value: 27, previous: 34, changePct: -20.6 },
+      avgTicket: { value: roundCurrencyEUR(billed / 18), previous: 720, changePct: 12.3 },
+      billedThisCalendarMonth: 3600,
+      billedPreviousCalendarMonth: 2950,
+      pctChangeVsPreviousMonth: 22,
+    },
+    timeSeries,
+    aging: [
+      { id: "0-30", label: "0–30 días", amount: 1250 },
+      { id: "31-60", label: "31–60 días", amount: 430 },
+      { id: "61-90", label: "61–90 días", amount: 220 },
+      { id: "90+", label: "+90 días", amount: 0 },
+    ],
+    clientsRanking: [
+      { clientId: "demo-1", name: "Estudio Marsal, S.L.", invoiced: 4200, collected: 3800, pending: 400 },
+      { clientId: "demo-2", name: "Talleres Nuria", invoiced: 3100, collected: 3100, pending: 0 },
+      { clientId: "demo-3", name: "Clínica Vega", invoiced: 2650, collected: 1900, pending: 750 },
+      { clientId: "demo-4", name: "Café Central", invoiced: 1450, collected: 1450, pending: 0 },
+    ],
+    statusDonut: [
+      { id: "paid", label: "Pagadas", amount: collected, color: "#10b981" },
+      { id: "pend", label: "Pendientes", amount: 1250, color: "#f59e0b" },
+      { id: "due", label: "Vencidas", amount: 650, color: "#ef4444" },
+    ],
+    topProducts: [
+      { key: "demo-a", name: "Consultoría (h)", quantity: 64, revenue: 4800 },
+      { key: "demo-b", name: "Mantenimiento mensual", quantity: 12, revenue: 3600 },
+      { key: "demo-c", name: "Diseño de marca", quantity: 3, revenue: 2400 },
+      { key: "demo-d", name: "Soporte premium", quantity: 8, revenue: 1200 },
+    ],
+    aiHints: {
+      bestPeriodLabel: "jun",
+      bestPeriodAmount: 3600,
+      topDebtClientName: "Clínica Vega",
+      topDebtAmount: 750,
+      lastQuarterBilled: 9750,
     },
   };
 }
