@@ -9,11 +9,8 @@ import {
   FISCAL_ADDRESS_HINT,
   FISCAL_ADDRESS_PLACEHOLDER,
 } from "@/lib/fiscal-address-hint";
-import {
-  INVOICE_PDF_TEMPLATE_IDS,
-  INVOICE_PDF_TEMPLATE_LABELS,
-  type InvoicePdfTemplateId,
-} from "@/lib/invoice-pdf/template-id";
+import { InvoicePdfTemplateField } from "@/components/invoice-pdf-template-field";
+import type { InvoicePdfTemplateId } from "@/lib/invoice-pdf/template-id";
 
 const initial: FiscalProfileState = {};
 
@@ -126,18 +123,7 @@ export function FiscalProfileForm({
           </div>
         </div>
 
-        <select
-          name="invoice_pdf_template"
-          defaultValue={initialPdfTemplate}
-          className={`${inputClass} text-sm`}
-        >
-          {INVOICE_PDF_TEMPLATE_IDS.map((id) => (
-            <option key={id} value={id}>
-              {INVOICE_PDF_TEMPLATE_LABELS[id].title} —{" "}
-              {INVOICE_PDF_TEMPLATE_LABELS[id].description}
-            </option>
-          ))}
-        </select>
+        <InvoicePdfTemplateField initialTemplate={initialPdfTemplate} />
       </section>
 
       <button
