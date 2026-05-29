@@ -51,7 +51,7 @@ export default async function AutomationPage() {
           </p>
         ) : null}
 
-        <p className="max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">
           Cada usuario del panel tiene sus propias preferencias. Los flujos en n8n deben estar
           publicados en tu instancia. Consulta{" "}
           <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">docs/</code> en el
