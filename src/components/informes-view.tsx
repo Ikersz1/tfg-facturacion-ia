@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { InteractiveDonut } from "@/components/interactive-donut";
-import { InformesInsightPanel } from "@/components/informes-insight-panel";
 import { InformesRangeHeading, InformesRangeToolbar } from "@/components/informes-range-toolbar";
 import { ReportKpiCard } from "@/components/report-kpi-card";
 import { BilledVsCollectedChart } from "@/components/billed-vs-collected-chart";
@@ -258,8 +257,6 @@ export function InformesView({ data }: { data: ReportsData }) {
           </table>
         </div>
       </section>
-
-      {isDemo ? null : <InformesInsightPanel filters={filters} />}
 
       <p className="text-center text-xs text-zinc-400 dark:text-zinc-500">
         {m.invoiceCountInPeriod} facturas emitidas en el periodo del informe ·{" "}

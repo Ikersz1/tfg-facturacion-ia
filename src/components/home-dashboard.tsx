@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { MetricCard } from "@/components/dashboard-metric-card";
 import { HomeAssistantCta } from "@/components/home-assistant-cta";
-import { RevenueBarChart } from "@/components/revenue-bar-chart";
+import { AnimatedLineChart } from "@/components/animated-line-chart";
 import type { DashboardData, MonthlyIncome } from "@/lib/dashboard-data";
 import { formatMoneyEUR } from "@/lib/money";
 
@@ -42,18 +42,45 @@ function formatShortDate(iso: string | null): string {
   return d.toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-function RevenueChart({ months }: { months: MonthlyIncome[] }) {
+function RevenueTrendCard({ months }: { months: MonthlyIncome[] }) {
+  const total = months.reduce((acc, m) => acc + m.amount, 0);
+  const last = months[months.length - 1]?.amount ?? 0;
+  const prev = months[months.length - 2]?.amount ?? 0;
+  const trendUp = last >= prev;
+
   return (
     <div className="overflow-visible rounded-2xl border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/80">
-      <div className="mb-4 flex items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold text-blue-800 dark:text-sky-300">Ingresos por mes</h2>
-        <span className="text-[11px] text-zinc-500 dark:text-zinc-400">Últimos 6 meses</span>
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h2 className="text-sm font-semibold text-blue-800 dark:text-sky-300">Evolución de ingresos</h2>
+          <p className="mt-0.5 text-[11px] text-zinc-500 dark:text-zinc-400">Últimos 6 meses</p>
+        </div>
+        <div className="text-right">
+          <p className="text-xl font-semibold tabular-nums tracking-tight text-zinc-900 dark:text-zinc-50">
+            {formatMoneyEUR(total)}
+          </p>
+          <p
+            className={`text-[11px] font-medium ${
+              trendUp ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
+            }`}
+          >
+            {trendUp ? "▲" : "▼"} mes actual {formatMoneyEUR(last)}
+          </p>
+        </div>
       </div>
-      <RevenueBarChart
-        points={months}
+      <AnimatedLineChart
+        series={[
+          {
+            id: "ingresos",
+            name: "Ingresos",
+            color: "#2563eb",
+            points: months.map((mth) => ({ label: mth.label, value: mth.amount })),
+          },
+        ]}
+        area
+        formatValue={formatMoneyEUR}
+        heightClassName="h-48"
         emptyMessage="Sin datos en este rango."
-        barAreaClassName="h-32"
-        minVisiblePct={8}
       />
     </div>
   );
@@ -121,7 +148,7 @@ export function HomeDashboard({ data }: { data: DashboardData }) {
         />
       </section>
 
-      <RevenueChart months={data.monthlyIncome} />
+      <RevenueTrendCard months={data.monthlyIncome} />
 
       <div className="grid gap-8 lg:grid-cols-[1fr_minmax(220px,280px)]">
         <div className="rounded-2xl border border-zinc-200/90 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900/80">
