@@ -133,17 +133,16 @@ export function AutomationSettingsForm({
           description="Tras el período de gracia, n8n envía un email de recordatorio al cliente. Máximo una vez cada 7 días por factura. Solo facturas con email de cliente."
         />
 
-        <div className="flex flex-col gap-1 rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-800/40">
-          <label
-            htmlFor="n8n_reminder_grace_days"
-            className="text-sm font-medium text-zinc-900 dark:text-zinc-50"
-          >
-            Días de gracia antes del primer recordatorio al cliente
+        <div className="flex items-start justify-between gap-4 rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-800/40">
+          <label htmlFor="n8n_reminder_grace_days" className="flex min-w-0 flex-col gap-1 text-sm">
+            <span className="font-medium text-zinc-900 dark:text-zinc-50">
+              Días de gracia antes del primer recordatorio al cliente
+            </span>
+            <span className="text-zinc-600 dark:text-zinc-400">
+              Tiempo desde el vencimiento hasta el primer aviso al cliente. Mínimo 1, máximo 30.
+            </span>
           </label>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            Tiempo desde el vencimiento hasta el primer aviso al cliente. Mínimo 1, máximo 30.
-          </p>
-          <div className="mt-2 flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2 pt-0.5">
             <input
               id="n8n_reminder_grace_days"
               type="number"
@@ -151,7 +150,7 @@ export function AutomationSettingsForm({
               defaultValue={initialGraceDays}
               min={1}
               max={30}
-              className="w-20 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-center text-sm text-zinc-900 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-50"
+              className="w-16 rounded-lg border border-zinc-300 bg-white px-2 py-2 text-center text-sm text-zinc-900 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-50"
             />
             <span className="text-sm text-zinc-500 dark:text-zinc-400">días</span>
           </div>
