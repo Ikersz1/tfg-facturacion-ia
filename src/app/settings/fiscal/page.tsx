@@ -51,13 +51,6 @@ export default async function FiscalSettingsPage() {
           </span>
         </div>
 
-        <div className="rounded-xl border border-zinc-200 bg-zinc-50/80 px-4 py-3 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800/40 dark:text-zinc-400">
-          Si defines <code className="rounded bg-zinc-200/70 px-1 dark:bg-zinc-700/70">VERIFACTI_NIF_API_KEY</code>{" "}
-          en el servidor (clave <code className="rounded bg-zinc-200/70 px-1 dark:bg-zinc-700/70">vf_test_…</code> de
-          Verifacti), al emitir una factura se enviará el registro a Verifacti. El cliente debe tener NIF/CIF. Para
-          comprobar el estado en la AEAT usa el botón «Comprobar estado AEAT» en el detalle de la factura.
-        </div>
-
         <FiscalProfileForm
           initialLegalName={row?.legal_name ?? ""}
           initialTaxId={row?.tax_id ?? ""}
