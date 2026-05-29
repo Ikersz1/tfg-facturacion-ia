@@ -76,13 +76,14 @@ export function AutomationSettingsForm({
       ) : null}
 
       <div className="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+          Al emitir factura
+        </h2>
+
         {!webhookConfigured ? (
           <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
-            Sin{" "}
-            <code className="rounded bg-amber-100/80 px-1 dark:bg-amber-900/60">
-              N8N_INVOICE_ISSUED_WEBHOOK_URL
-            </code>{" "}
-            en Vercel, no se enviará correo al emitir aunque la opción esté activa.
+            El envío automático al emitir no está activo en el servidor. Aunque actives la opción,
+            no se enviará el correo hasta que esté configurado.
           </p>
         ) : null}
 
@@ -90,23 +91,22 @@ export function AutomationSettingsForm({
           name="n8n_auto_email_on_issue"
           defaultChecked={initialAutoEmail}
           title="Enviar factura por email al emitir"
-          description="Al pulsar «Emitir y numerar», n8n envía el PDF al email del cliente."
+          description="Al pulsar «Emitir y numerar», se envía el PDF al email del cliente."
         />
       </div>
 
       <div className="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+          Recordatorios de facturas vencidas
+        </h2>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          n8n consulta el endpoint de recordatorios según el horario que configures en tu flujo (p.
-          ej. una vez al día).
+          Los recordatorios se comprueban de forma programada (por ejemplo, una vez al día).
         </p>
 
         {!secretConfigured ? (
           <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
-            Sin{" "}
-            <code className="rounded bg-amber-100/80 px-1 dark:bg-amber-900/60">
-              N8N_WEBHOOK_SECRET
-            </code>{" "}
-            en Vercel, el endpoint de recordatorios rechazará todas las peticiones de n8n.
+            Los recordatorios automáticos no están activos en el servidor. No se enviarán avisos
+            hasta que esté configurado.
           </p>
         ) : null}
 
@@ -114,14 +114,14 @@ export function AutomationSettingsForm({
           name="n8n_notify_issuer_on_overdue"
           defaultChecked={initialNotifyIssuerOnOverdue}
           title="Avisarme a mí cuando una factura venza"
-          description="La primera vez que una factura aparece vencida, n8n te envía un email a tu cuenta con los datos del cliente y el importe pendiente."
+          description="La primera vez que una factura aparece vencida, recibes un email a tu cuenta con los datos del cliente y el importe pendiente."
         />
 
         <ToggleRow
           name="n8n_auto_reminder_client"
           defaultChecked={initialAutoReminderClient}
           title="Enviar recordatorio automático al cliente moroso"
-          description="Tras el período de gracia, n8n envía un email de recordatorio al cliente. Máximo una vez cada 7 días por factura. Solo facturas con email de cliente."
+          description="Tras el período de gracia, se envía un email de recordatorio al cliente. Máximo una vez cada 7 días por factura. Solo facturas con email de cliente."
         />
 
         <div className="flex items-start justify-between gap-4 rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-800/40">
@@ -149,18 +149,18 @@ export function AutomationSettingsForm({
       </div>
 
       <div className="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+          Resumen semanal
+        </h2>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          n8n consulta el endpoint una vez por semana (p. ej. los lunes). Recibes un email con lo
-          facturado la semana pasada, pendiente de cobro y facturas vencidas.
+          Una vez por semana (por ejemplo, los lunes) recibes un email con lo facturado la semana
+          pasada, pendiente de cobro y facturas vencidas.
         </p>
 
         {!secretConfigured ? (
           <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
-            Requiere{" "}
-            <code className="rounded bg-amber-100/80 px-1 dark:bg-amber-900/60">
-              N8N_WEBHOOK_SECRET
-            </code>{" "}
-            en Vercel.
+            El resumen semanal no está activo en el servidor. No se enviará hasta que esté
+            configurado.
           </p>
         ) : null}
 

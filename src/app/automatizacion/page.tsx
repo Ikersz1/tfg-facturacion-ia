@@ -41,21 +41,19 @@ export default async function AutomationPage() {
       <PageHeader
         eyebrow="Configuración"
         title="Automatización"
-        description="Configura los flujos automáticos de n8n: emails al emitir, recordatorios de cobro y resumen semanal."
+        description="Configura los emails automáticos al emitir facturas, los recordatorios de cobro y el resumen semanal."
       />
       <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
         {migrationMissing ? (
           <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
-            Falta aplicar alguna migración de n8n en Supabase. Consulta{" "}
+            Falta aplicar alguna migración en Supabase. Consulta{" "}
             <code className="rounded bg-red-100 px-1 dark:bg-red-900/60">supabase/migrations/</code>.
           </p>
         ) : null}
 
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Cada usuario del panel tiene sus propias preferencias. Los flujos en n8n deben estar
-          publicados en tu instancia. Consulta{" "}
-          <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">docs/</code> en el
-          repositorio para la guía de configuración de cada flujo.
+          Cada usuario del panel tiene sus propias preferencias. Las automatizaciones se aplican
+          según la configuración del servidor.
         </p>
 
         <AutomationSettingsForm

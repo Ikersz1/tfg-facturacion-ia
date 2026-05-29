@@ -56,7 +56,7 @@ export async function updateAutomationSettingsAction(
     ) {
       return {
         error:
-          "Falta aplicar las migraciones de n8n en Supabase (ver supabase/migrations/).",
+          "Falta aplicar las migraciones en Supabase (ver supabase/migrations/).",
       };
     }
     return { error: error.message };
