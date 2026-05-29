@@ -12,6 +12,7 @@ export function AutomationSettingsForm({
   initialAutoEmail,
   initialNotifyIssuerOnOverdue,
   initialAutoReminderClient,
+  initialWeeklySummary,
   initialGraceDays,
   webhookConfigured,
   secretConfigured,
@@ -19,6 +20,7 @@ export function AutomationSettingsForm({
   initialAutoEmail: boolean;
   initialNotifyIssuerOnOverdue: boolean;
   initialAutoReminderClient: boolean;
+  initialWeeklySummary: boolean;
   initialGraceDays: number;
   webhookConfigured: boolean;
   secretConfigured: boolean;
@@ -161,6 +163,45 @@ export function AutomationSettingsForm({
             className="mt-1 w-28 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-brand/40 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-50"
           />
         </div>
+      </div>
+
+      {/* Flujo 3 — Resumen semanal */}
+      <div className="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+          Flujo 3 · Resumen semanal
+        </h2>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          n8n consulta el endpoint una vez por semana (p. ej. los lunes). Recibes un email con lo
+          facturado la semana pasada, pendiente de cobro y facturas vencidas.
+        </p>
+
+        {!secretConfigured ? (
+          <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
+            Requiere{" "}
+            <code className="rounded bg-amber-100/80 px-1 dark:bg-amber-900/60">
+              N8N_WEBHOOK_SECRET
+            </code>{" "}
+            en Vercel.
+          </p>
+        ) : null}
+
+        <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-800/40">
+          <input
+            type="checkbox"
+            name="n8n_weekly_summary_enabled"
+            defaultChecked={initialWeeklySummary}
+            className="mt-0.5 size-4 rounded border-zinc-300 text-brand focus:ring-brand/40"
+          />
+          <span className="flex flex-col gap-1 text-sm">
+            <span className="font-medium text-zinc-900 dark:text-zinc-50">
+              Recibir resumen semanal por email
+            </span>
+            <span className="text-zinc-600 dark:text-zinc-400">
+              Un correo a tu cuenta con facturación de la semana anterior, total pendiente y listado
+              de morosos (máximo 5). Se envía como mucho una vez por semana.
+            </span>
+          </span>
+        </label>
       </div>
 
       <button

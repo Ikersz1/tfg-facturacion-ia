@@ -13,6 +13,7 @@ export async function updateAutomationSettingsAction(
   const autoEmailOnIssue = formData.get("n8n_auto_email_on_issue") === "on";
   const notifyIssuerOnOverdue = formData.get("n8n_notify_issuer_on_overdue") === "on";
   const autoReminderClient = formData.get("n8n_auto_reminder_client") === "on";
+  const weeklySummaryEnabled = formData.get("n8n_weekly_summary_enabled") === "on";
   const graceDaysRaw = Number(formData.get("n8n_reminder_grace_days") ?? "3");
   const graceDays = Number.isFinite(graceDaysRaw) ? Math.max(1, Math.min(30, graceDaysRaw)) : 3;
 
@@ -39,6 +40,7 @@ export async function updateAutomationSettingsAction(
       n8n_auto_email_on_issue: autoEmailOnIssue,
       n8n_notify_issuer_on_overdue: notifyIssuerOnOverdue,
       n8n_auto_reminder_client: autoReminderClient,
+      n8n_weekly_summary_enabled: weeklySummaryEnabled,
       n8n_reminder_grace_days: graceDays,
       updated_at: new Date().toISOString(),
     })
@@ -49,11 +51,12 @@ export async function updateAutomationSettingsAction(
       error.message.includes("n8n_auto_email_on_issue") ||
       error.message.includes("n8n_notify_issuer_on_overdue") ||
       error.message.includes("n8n_auto_reminder_client") ||
-      error.message.includes("n8n_reminder_grace_days")
+      error.message.includes("n8n_reminder_grace_days") ||
+      error.message.includes("n8n_weekly_summary_enabled")
     ) {
       return {
         error:
-          "Falta aplicar la migración 20260528120000_n8n_overdue_reminders.sql en Supabase.",
+          "Falta aplicar las migraciones de n8n en Supabase (ver supabase/migrations/).",
       };
     }
     return { error: error.message };

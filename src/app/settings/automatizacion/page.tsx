@@ -16,7 +16,7 @@ export default async function AutomationSettingsPage() {
   const { data: row, error } = await supabase
     .from("user_fiscal_profile")
     .select(
-      "n8n_auto_email_on_issue, n8n_notify_issuer_on_overdue, n8n_auto_reminder_client, n8n_reminder_grace_days",
+      "n8n_auto_email_on_issue, n8n_notify_issuer_on_overdue, n8n_auto_reminder_client, n8n_weekly_summary_enabled, n8n_reminder_grace_days",
     )
     .eq("user_id", user.id)
     .maybeSingle();
@@ -24,6 +24,7 @@ export default async function AutomationSettingsPage() {
   const autoEmail = row?.n8n_auto_email_on_issue === true;
   const notifyIssuerOnOverdue = row?.n8n_notify_issuer_on_overdue === true;
   const autoReminderClient = row?.n8n_auto_reminder_client === true;
+  const weeklySummary = row?.n8n_weekly_summary_enabled === true;
   const graceDays = Math.max(1, Number(row?.n8n_reminder_grace_days) || 3);
 
   const webhookConfigured = isN8nIntegrationConfigured();
@@ -32,7 +33,8 @@ export default async function AutomationSettingsPage() {
   const migrationMissing =
     error?.message.includes("n8n_auto_email_on_issue") ||
     error?.message.includes("n8n_notify_issuer_on_overdue") ||
-    error?.message.includes("n8n_reminder_grace_days");
+    error?.message.includes("n8n_reminder_grace_days") ||
+    error?.message.includes("n8n_weekly_summary_enabled");
 
   return (
     <div className="flex w-full flex-1 flex-col">
@@ -40,7 +42,7 @@ export default async function AutomationSettingsPage() {
         back={{ href: "/", ariaLabel: "Volver al inicio" }}
         eyebrow="Automatización"
         title="Integraciones (n8n)"
-        description="Controla el envío automático de emails al emitir facturas y los recordatorios de cobro."
+        description="Controla emails al emitir, recordatorios de cobro y resumen semanal vía n8n."
       />
       <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
         {migrationMissing ? (
@@ -61,6 +63,7 @@ export default async function AutomationSettingsPage() {
           initialAutoEmail={autoEmail}
           initialNotifyIssuerOnOverdue={notifyIssuerOnOverdue}
           initialAutoReminderClient={autoReminderClient}
+          initialWeeklySummary={weeklySummary}
           initialGraceDays={graceDays}
           webhookConfigured={webhookConfigured}
           secretConfigured={secretConfigured}
