@@ -62,6 +62,6 @@ export async function updateAutomationSettingsAction(
     return { error: error.message };
   }
 
-  revalidatePath("/settings/automatizacion");
+  revalidatePath("/automatizacion");
   return { ok: true };
 }

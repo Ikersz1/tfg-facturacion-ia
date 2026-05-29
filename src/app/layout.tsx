@@ -4,6 +4,7 @@ import { cookies, headers } from "next/headers";
 import { AppSidebar } from "@/components/app-sidebar";
 import { AssistantWidget } from "@/components/assistant-widget";
 import { ThemeCookieSync } from "@/components/theme-cookie-sync";
+import { createClient } from "@/lib/supabase/server";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -40,6 +41,15 @@ export default async function RootLayout({
   ]);
   const isAuthPage = authPages.has(pathname);
 
+  let userEmail: string | null = null;
+  if (!isAuthPage) {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    userEmail = user?.email ?? null;
+  }
+
   return (
     <html
       lang="es"
@@ -48,7 +58,7 @@ export default async function RootLayout({
     >
       <body className="flex min-h-full flex-col bg-background text-zinc-900 dark:text-zinc-100">
         <ThemeCookieSync />
-        {isAuthPage ? null : <AppSidebar />}
+        {isAuthPage ? null : <AppSidebar userEmail={userEmail} />}
         {isAuthPage ? null : <AssistantWidget />}
         <div
           className={`flex min-h-screen flex-1 flex-col${isAuthPage ? "" : " pt-14 md:pt-0 md:pl-64"}`}
