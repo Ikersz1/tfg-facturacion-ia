@@ -64,6 +64,7 @@ export function InformesView({ data }: { data: ReportsData }) {
   const rangePreset = detectInformesPreset(filters.from, filters.to);
   const isEsteMesPeriod = rangePreset === "month";
   const isEstaSemanaPeriod = rangePreset === "week";
+  const isLast12Period = rangePreset === "last12";
   const isSingleDay = filters.from === filters.to;
   const m = data.metrics;
   const comparison = "vs periodo anterior";
@@ -125,7 +126,11 @@ export function InformesView({ data }: { data: ReportsData }) {
               verde, cuánto se ha cobrado de ello
             </p>
           </div>
-          {isEsteMesPeriod || isEstaSemanaPeriod || isSingleDay || isDemo ? null : (
+          {isEsteMesPeriod ||
+          isEstaSemanaPeriod ||
+          isLast12Period ||
+          isSingleDay ||
+          isDemo ? null : (
             <div className="flex h-10 w-full shrink-0 rounded-xl border border-zinc-200/90 bg-zinc-50 p-0.5 dark:border-zinc-600 dark:bg-zinc-900 sm:w-auto">
               <Link
                 href={granularityHref(filters, "month")}
