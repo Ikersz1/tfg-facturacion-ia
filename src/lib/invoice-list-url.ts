@@ -1,3 +1,7 @@
+import { buildListPageUrl, parseListPage } from "@/lib/list-page";
+
+export { LIST_PAGE_SIZE as INVOICES_PAGE_SIZE } from "@/lib/list-page";
+
 /** Construye query string para /invoices omitiendo valores vacíos. */
 export function buildInvoicesListUrl(
   params: Record<string, string | undefined>,
@@ -37,8 +41,6 @@ export function getPresetDateRange(
   return { from: formatYMD(first), to: formatYMD(last) };
 }
 
-export const INVOICES_PAGE_SIZE = 10;
-
 export type InvoiceListFilters = {
   client_id?: string;
   status?: string;
@@ -50,14 +52,17 @@ export type InvoiceListFilters = {
 };
 
 export function buildInvoicesListPageUrl(filters: InvoiceListFilters, page: number): string {
-  return buildInvoicesListUrl({
-    client_id: filters.client_id,
-    status: filters.status,
-    from: filters.from,
-    to: filters.to,
-    segment: filters.segment,
-    page: page > 1 ? String(page) : undefined,
-  });
+  return buildListPageUrl(
+    "/invoices",
+    {
+      client_id: filters.client_id,
+      status: filters.status,
+      from: filters.from,
+      to: filters.to,
+      segment: filters.segment,
+    },
+    page,
+  );
 }
 
 export function parseInvoiceListSearch(
@@ -67,15 +72,12 @@ export function parseInvoiceListSearch(
     const v = raw[k];
     return typeof v === "string" ? v : undefined;
   };
-  const pageRaw = g("page");
-  const page = pageRaw ? Math.max(1, parseInt(pageRaw, 10) || 1) : 1;
-
   return {
     client_id: g("client_id"),
     status: g("status"),
     from: g("from"),
     to: g("to"),
     segment: g("segment"),
-    page,
+    page: parseListPage(g("page")),
   };
 }

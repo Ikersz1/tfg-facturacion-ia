@@ -5,8 +5,12 @@ import { InvoicesFiltersPanel } from "@/components/invoices-filters-panel";
 import { InvoicesVerifactuBulkButton } from "@/components/invoices-verifactu-bulk-button";
 import { PageHeader } from "@/components/page-header";
 import { effectiveInvoiceStatus } from "@/lib/invoice-status";
-import { InvoicesPagination } from "@/components/invoices-pagination";
-import { INVOICES_PAGE_SIZE, parseInvoiceListSearch } from "@/lib/invoice-list-url";
+import { ListPagination } from "@/components/list-pagination";
+import {
+  buildInvoicesListPageUrl,
+  parseInvoiceListSearch,
+} from "@/lib/invoice-list-url";
+import { paginateRows } from "@/lib/list-page";
 import { formatMoneyEUR, roundCurrencyEUR } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
 
@@ -157,12 +161,9 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
       filters.segment,
   );
 
-  const totalItems = tableRows.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / INVOICES_PAGE_SIZE));
-  const currentPage = Math.min(filters.page ?? 1, totalPages);
-  const pageRows = tableRows.slice(
-    (currentPage - 1) * INVOICES_PAGE_SIZE,
-    currentPage * INVOICES_PAGE_SIZE,
+  const { pageRows, currentPage, totalPages, totalItems } = paginateRows(
+    tableRows,
+    filters.page ?? 1,
   );
 
   return (
@@ -326,11 +327,13 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
               })}
             </tbody>
           </table>
-          <InvoicesPagination
+          <ListPagination
             page={currentPage}
             totalPages={totalPages}
             totalItems={totalItems}
-            filters={filters}
+            itemLabelSingular="factura"
+            itemLabelPlural="facturas"
+            hrefForPage={(p) => buildInvoicesListPageUrl(filters, p)}
           />
         </div>
       )}

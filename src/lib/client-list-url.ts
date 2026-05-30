@@ -1,4 +1,5 @@
 import type { ClientKind } from "@/lib/client-kind";
+import { buildListPageUrl, parseListPage } from "@/lib/list-page";
 
 /** Construye query string para /clients omitiendo valores vacíos. */
 export function buildClientsListUrl(
@@ -19,7 +20,20 @@ export type ClientListFilters = {
   q?: string;
   /** Por defecto: más recientes primero (sin parámetro en URL) */
   sort?: "name_asc" | "name_desc";
+  page?: number;
 };
+
+export function buildClientsListPageUrl(filters: ClientListFilters, page: number): string {
+  return buildListPageUrl(
+    "/clients",
+    {
+      kind: filters.kind,
+      q: filters.q,
+      sort: filters.sort,
+    },
+    page,
+  );
+}
 
 export function parseClientListSearch(
   raw: Record<string, string | string[] | undefined>,
@@ -38,5 +52,6 @@ export function parseClientListSearch(
     kind: kind ?? "company",
     q: g("q"),
     sort,
+    page: parseListPage(g("page")),
   };
 }

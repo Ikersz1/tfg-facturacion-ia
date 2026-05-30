@@ -11,7 +11,9 @@ import {
   parseClientKind,
   type ClientKind,
 } from "@/lib/client-kind";
-import { parseClientListSearch } from "@/lib/client-list-url";
+import { ListPagination } from "@/components/list-pagination";
+import { buildClientsListPageUrl, parseClientListSearch } from "@/lib/client-list-url";
+import { paginateRows } from "@/lib/list-page";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -77,6 +79,11 @@ export default async function ClientsPage({ searchParams }: PageProps) {
 
   const hasFilters = Boolean(
     (filters.q && filters.q.trim() !== "") || filters.sort,
+  );
+
+  const { pageRows, currentPage, totalPages, totalItems } = paginateRows(
+    clients,
+    filters.page ?? 1,
   );
 
   return (
@@ -170,7 +177,7 @@ export default async function ClientsPage({ searchParams }: PageProps) {
                   </tr>
                 </thead>
                 <tbody>
-                  {clients.map((c) => (
+                  {pageRows.map((c) => (
                     <tr
                       key={c.id}
                       className="border-b border-zinc-100 last:border-0 dark:border-zinc-800/80"
@@ -202,6 +209,14 @@ export default async function ClientsPage({ searchParams }: PageProps) {
                   ))}
                 </tbody>
               </table>
+              <ListPagination
+                page={currentPage}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                itemLabelSingular="cliente"
+                itemLabelPlural="clientes"
+                hrefForPage={(p) => buildClientsListPageUrl(filters, p)}
+              />
             </div>
           )}
         </section>

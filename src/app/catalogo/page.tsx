@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { CatalogKindTabs } from "@/components/catalog-kind-tabs";
 import { PageHeader } from "@/components/page-header";
-import { catalogKindLabelPlural, parseCatalogKind, type CatalogKind } from "@/lib/catalog-kind";
+import { ListPagination } from "@/components/list-pagination";
+import { buildCatalogListUrl, parseCatalogListSearch } from "@/lib/catalog-list-url";
+import { catalogKindLabelPlural } from "@/lib/catalog-kind";
+import { paginateRows } from "@/lib/list-page";
 import { formatMoneyEUR } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
 
@@ -13,8 +16,8 @@ type PageProps = {
 
 export default async function CatalogoPage({ searchParams }: PageProps) {
   const sp = await searchParams;
-  const raw = typeof sp.kind === "string" ? sp.kind : undefined;
-  const kind: CatalogKind = parseCatalogKind(raw);
+  const filters = parseCatalogListSearch(sp);
+  const kind = filters.kind;
 
   const supabase = await createClient();
   const { data: rows, error } = await supabase
@@ -25,6 +28,13 @@ export default async function CatalogoPage({ searchParams }: PageProps) {
 
   const title = catalogKindLabelPlural(kind);
   const newHref = `/catalogo/new?kind=${kind}`;
+  const allRows = rows ?? [];
+  const { pageRows, currentPage, totalPages, totalItems } = paginateRows(
+    allRows,
+    filters.page ?? 1,
+  );
+  const itemLabelSingular = kind === "service" ? "servicio" : "producto";
+  const itemLabelPlural = kind === "service" ? "servicios" : "productos";
 
   return (
     <div className="flex w-full flex-1 flex-col">
@@ -43,10 +53,8 @@ export default async function CatalogoPage({ searchParams }: PageProps) {
         <section className="min-w-0">
           <div className="mb-3 flex items-baseline justify-between gap-3">
             <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">{title}</h2>
-            {rows && rows.length > 0 ? (
-              <span className="text-sm text-zinc-500 dark:text-zinc-400">
-                {rows.length}
-              </span>
+            {totalItems > 0 ? (
+              <span className="text-sm text-zinc-500 dark:text-zinc-400">{totalItems}</span>
             ) : null}
           </div>
           {error ? (
@@ -89,7 +97,7 @@ export default async function CatalogoPage({ searchParams }: PageProps) {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                    {rows.map((p) => (
+                    {pageRows.map((p) => (
                       <tr key={p.id as string}>
                         <td className="px-4 py-3 text-zinc-900 dark:text-zinc-50">{p.name as string}</td>
                         <td className="px-4 py-3 font-mono text-xs text-zinc-600 dark:text-zinc-400">
@@ -109,6 +117,14 @@ export default async function CatalogoPage({ searchParams }: PageProps) {
                   </tbody>
                 </table>
               </div>
+              <ListPagination
+                page={currentPage}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                itemLabelSingular={itemLabelSingular}
+                itemLabelPlural={itemLabelPlural}
+                hrefForPage={(p) => buildCatalogListUrl(filters, p)}
+              />
             </div>
           )}
         </section>
