@@ -333,61 +333,61 @@ export function InvoiceDetailForm({
           <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
             Verifactu (Verifacti)
           </h2>
-          <dl className="grid gap-3 text-sm">
-            {invoice.verifacti_registro_estado ? (
-              <div>
-                <dt className="text-zinc-500">Estado registro</dt>
-                {isVerifactiConfirmed(invoice.verifacti_registro_estado) ? (
-                  <dd className="flex items-center gap-2 font-medium text-emerald-800 dark:text-emerald-200">
-                    <span>{invoice.verifacti_registro_estado}</span>
-                    <span className="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">
-                      Confirmada
-                    </span>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <dl className="grid min-w-0 flex-1 gap-3 text-sm">
+              {invoice.verifacti_registro_estado ? (
+                <div>
+                  <dt className="text-zinc-500">Estado registro</dt>
+                  {isVerifactiConfirmed(invoice.verifacti_registro_estado) ? (
+                    <dd className="flex items-center gap-2 font-medium text-emerald-800 dark:text-emerald-200">
+                      <span>{invoice.verifacti_registro_estado}</span>
+                      <span className="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">
+                        Confirmada
+                      </span>
+                    </dd>
+                  ) : (
+                    <dd className="font-medium text-zinc-900 dark:text-zinc-100">
+                      {invoice.verifacti_registro_estado}
+                    </dd>
+                  )}
+                </div>
+              ) : null}
+              {invoice.verifacti_uuid ? (
+                <div>
+                  <dt className="text-zinc-500">UUID</dt>
+                  <dd className="break-all font-mono text-xs text-zinc-800 dark:text-zinc-200">
+                    {invoice.verifacti_uuid}
                   </dd>
-                ) : (
-                  <dd className="font-medium text-zinc-900 dark:text-zinc-100">
-                    {invoice.verifacti_registro_estado}
-                  </dd>
-                )}
-              </div>
-            ) : null}
-            {invoice.verifacti_uuid ? (
-              <div>
-                <dt className="text-zinc-500">UUID</dt>
-                <dd className="break-all font-mono text-xs text-zinc-800 dark:text-zinc-200">
-                  {invoice.verifacti_uuid}
-                </dd>
-                <a
-                  href={`/api/verifacti/verify/${invoice.id}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-1 inline-flex text-xs font-medium text-accent underline underline-offset-2 hover:text-accent-hover"
-                >
-                  Ir a verificación de factura
-                </a>
-              </div>
-            ) : null}
-            {invoice.verifacti_last_error ? (
-              <div>
-                <dt className="text-zinc-500">Último error</dt>
-                <dd className="text-amber-800 dark:text-amber-200">{invoice.verifacti_last_error}</dd>
-              </div>
-            ) : null}
+                  <a
+                    href={`/api/verifacti/verify/${invoice.id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-1 inline-flex text-xs font-medium text-accent underline underline-offset-2 hover:text-accent-hover"
+                  >
+                    Ir a verificación de factura
+                  </a>
+                </div>
+              ) : null}
+              {invoice.verifacti_last_error ? (
+                <div>
+                  <dt className="text-zinc-500">Último error</dt>
+                  <dd className="text-amber-800 dark:text-amber-200">{invoice.verifacti_last_error}</dd>
+                </div>
+              ) : null}
+            </dl>
             {invoice.verifacti_qr_base64 ? (
-              <div className="flex flex-col gap-2">
-                <dt className="text-zinc-500">Código QR</dt>
-                <dd>
-                  {/* Base64 dinámico de Verifacti: no usar next/image */}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={verifactiQrDataUrl(invoice.verifacti_qr_base64)}
-                    alt="QR Verifactu"
-                    className="h-40 w-40 border border-zinc-200 bg-white object-contain dark:border-zinc-600"
-                  />
-                </dd>
+              <div className="flex shrink-0 flex-col items-end gap-2 self-end sm:self-start">
+                <span className="text-sm text-zinc-500 dark:text-zinc-400">Código QR</span>
+                {/* Base64 dinámico de Verifacti: no usar next/image */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={verifactiQrDataUrl(invoice.verifacti_qr_base64)}
+                  alt="QR Verifactu"
+                  className="h-40 w-40 border border-zinc-200 bg-white object-contain dark:border-zinc-600"
+                />
               </div>
             ) : null}
-          </dl>
+          </div>
           {invoice.verifacti_uuid ? (
             <form action={vfStatusForm} className="mt-4 flex flex-col gap-2 border-t border-zinc-200 pt-4 dark:border-zinc-700">
               <input type="hidden" name="invoice_id" value={invoice.id} />

@@ -152,11 +152,11 @@ export function HomeDashboard({ data }: { data: DashboardData }) {
       <RevenueTrendCard months={data.monthlyIncome} />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(220px,260px)_1fr] lg:items-start">
-        <aside className="order-2 self-start rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/80 sm:p-5 lg:order-1">
-          <div>
+        <aside className="order-2 flex flex-col gap-4 self-start lg:order-1">
+          <div className="rounded-2xl border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/80">
             <h2 className="text-sm font-semibold text-blue-800 dark:text-sky-300">Acciones rápidas</h2>
-            <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Crear registros nuevos</p>
-            <ul className="mt-3 flex flex-col gap-1.5">
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Crear registros nuevos</p>
+            <ul className="mt-4 flex flex-col gap-2">
               <li>
                 <Link
                   href="/invoices/new"
@@ -201,10 +201,10 @@ export function HomeDashboard({ data }: { data: DashboardData }) {
             </ul>
           </div>
 
-          <div className="mt-4 border-t border-zinc-100 pt-4 dark:border-zinc-800">
+          <div className="rounded-2xl border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/80">
             <h2 className="text-sm font-semibold text-blue-800 dark:text-sky-300">Accesos rápidos</h2>
-            <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Atajos a listados frecuentes</p>
-            <ul className="mt-3 flex flex-col gap-1.5 text-sm">
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Atajos a listados frecuentes</p>
+            <ul className="mt-4 flex flex-col gap-2 text-sm">
               <li>
                 <Link
                   href="/invoices?status=overdue"
