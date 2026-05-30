@@ -330,10 +330,53 @@ export function InvoiceDetailForm({
         invoice.verifacti_last_error ||
         invoice.verifacti_uuid) ? (
         <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
-          <div className="mb-3 flex items-start justify-between gap-4">
-            <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-              Verifactu (Verifacti)
-            </h2>
+          <div className="flex items-start justify-between gap-4 sm:gap-6">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                Verifactu (Verifacti)
+              </h2>
+              <dl className="mt-3 grid gap-3 text-sm">
+                {invoice.verifacti_registro_estado ? (
+                  <div>
+                    <dt className="text-zinc-500">Estado registro</dt>
+                    {isVerifactiConfirmed(invoice.verifacti_registro_estado) ? (
+                      <dd className="flex flex-wrap items-center gap-2 font-medium text-emerald-800 dark:text-emerald-200">
+                        <span>{invoice.verifacti_registro_estado}</span>
+                        <span className="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">
+                          Confirmada
+                        </span>
+                      </dd>
+                    ) : (
+                      <dd className="font-medium text-zinc-900 dark:text-zinc-100">
+                        {invoice.verifacti_registro_estado}
+                      </dd>
+                    )}
+                  </div>
+                ) : null}
+                {invoice.verifacti_uuid ? (
+                  <div>
+                    <dt className="text-zinc-500">UUID</dt>
+                    <dd className="break-all font-mono text-xs text-zinc-800 dark:text-zinc-200">
+                      {invoice.verifacti_uuid}
+                    </dd>
+                    <a
+                      href={`/api/verifacti/verify/${invoice.id}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-1 inline-flex text-xs font-medium text-accent underline underline-offset-2 hover:text-accent-hover"
+                    >
+                      Ir a verificación de factura
+                    </a>
+                  </div>
+                ) : null}
+                {invoice.verifacti_last_error ? (
+                  <div>
+                    <dt className="text-zinc-500">Último error</dt>
+                    <dd className="text-amber-800 dark:text-amber-200">{invoice.verifacti_last_error}</dd>
+                  </div>
+                ) : null}
+              </dl>
+            </div>
             {invoice.verifacti_qr_base64 ? (
               /* Base64 dinámico de Verifacti: no usar next/image */
               /* eslint-disable-next-line @next/next/no-img-element */
@@ -343,49 +386,6 @@ export function InvoiceDetailForm({
                 className="h-36 w-36 shrink-0 border border-zinc-200 bg-white object-contain dark:border-zinc-600"
               />
             ) : null}
-          </div>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <dl className="grid min-w-0 flex-1 gap-3 text-sm">
-              {invoice.verifacti_registro_estado ? (
-                <div>
-                  <dt className="text-zinc-500">Estado registro</dt>
-                  {isVerifactiConfirmed(invoice.verifacti_registro_estado) ? (
-                    <dd className="flex items-center gap-2 font-medium text-emerald-800 dark:text-emerald-200">
-                      <span>{invoice.verifacti_registro_estado}</span>
-                      <span className="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">
-                        Confirmada
-                      </span>
-                    </dd>
-                  ) : (
-                    <dd className="font-medium text-zinc-900 dark:text-zinc-100">
-                      {invoice.verifacti_registro_estado}
-                    </dd>
-                  )}
-                </div>
-              ) : null}
-              {invoice.verifacti_uuid ? (
-                <div>
-                  <dt className="text-zinc-500">UUID</dt>
-                  <dd className="break-all font-mono text-xs text-zinc-800 dark:text-zinc-200">
-                    {invoice.verifacti_uuid}
-                  </dd>
-                  <a
-                    href={`/api/verifacti/verify/${invoice.id}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-1 inline-flex text-xs font-medium text-accent underline underline-offset-2 hover:text-accent-hover"
-                  >
-                    Ir a verificación de factura
-                  </a>
-                </div>
-              ) : null}
-              {invoice.verifacti_last_error ? (
-                <div>
-                  <dt className="text-zinc-500">Último error</dt>
-                  <dd className="text-amber-800 dark:text-amber-200">{invoice.verifacti_last_error}</dd>
-                </div>
-              ) : null}
-            </dl>
           </div>
           {invoice.verifacti_uuid ? (
             <form action={vfStatusForm} className="mt-4 flex flex-col gap-2 border-t border-zinc-200 pt-4 dark:border-zinc-700">
