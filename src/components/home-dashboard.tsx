@@ -151,78 +151,8 @@ export function HomeDashboard({ data }: { data: DashboardData }) {
 
       <RevenueTrendCard months={data.monthlyIncome} />
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_minmax(220px,260px)] lg:items-start">
-        <div className="flex flex-col self-start rounded-2xl border border-zinc-200/90 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900/80">
-          <div className="flex flex-wrap items-end justify-between gap-2 border-b border-zinc-100 px-4 py-3 dark:border-zinc-800 sm:px-5">
-            <div>
-              <h2 className="text-sm font-semibold text-blue-800 dark:text-sky-300">Últimas facturas</h2>
-              <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-                Las más recientes por fecha de creación
-              </p>
-            </div>
-            {recentRows.length > 0 ? (
-              <Link
-                href="/invoices"
-                className="text-xs font-medium text-brand hover:underline dark:text-accent"
-              >
-                Ver todas →
-              </Link>
-            ) : null}
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[520px] text-left text-sm">
-              <thead>
-                <tr className="border-b border-zinc-100 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
-                  <th className="px-4 py-2 font-medium sm:px-5">Número</th>
-                  <th className="px-4 py-2 font-medium sm:px-5">Cliente</th>
-                  <th className="px-4 py-2 font-medium sm:px-5">Importe</th>
-                  <th className="px-4 py-2 font-medium sm:px-5">Estado</th>
-                  <th className="px-4 py-2 font-medium sm:px-5">Fecha</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentRows.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-5 py-6 text-center text-zinc-500 dark:text-zinc-400">
-                      No hay facturas todavía. Crea la primera desde acciones rápidas.
-                    </td>
-                  </tr>
-                ) : (
-                  recentRows.map((row) => (
-                    <tr
-                      key={row.id}
-                      className="border-b border-zinc-50 last:border-0 dark:border-zinc-800/80"
-                    >
-                      <td className="px-4 py-2.5 font-medium text-zinc-900 dark:text-zinc-100 sm:px-5">
-                        <Link href={`/invoices/${row.id}`} className="text-brand hover:underline dark:text-accent">
-                          {row.numberLabel}
-                        </Link>
-                      </td>
-                      <td className="max-w-[140px] truncate px-4 py-2.5 text-zinc-700 dark:text-zinc-300 sm:px-5">
-                        {row.clientName}
-                      </td>
-                      <td className="px-4 py-2.5 tabular-nums text-zinc-900 dark:text-zinc-100 sm:px-5">
-                        {formatMoneyEUR(row.total)}
-                      </td>
-                      <td className="px-4 py-2.5 sm:px-5">
-                        <span
-                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusBadgeClass(row.status)}`}
-                        >
-                          {statusLabel(row.status)}
-                        </span>
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-2.5 text-zinc-600 dark:text-zinc-400 sm:px-5">
-                        {formatShortDate(row.date)}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <aside className="self-start rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/80 sm:p-5">
+      <div className="grid gap-6 lg:grid-cols-[minmax(220px,260px)_1fr] lg:items-start">
+        <aside className="order-2 self-start rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/80 sm:p-5 lg:order-1">
           <div>
             <h2 className="text-sm font-semibold text-blue-800 dark:text-sky-300">Acciones rápidas</h2>
             <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Crear registros nuevos</p>
@@ -314,6 +244,76 @@ export function HomeDashboard({ data }: { data: DashboardData }) {
             </ul>
           </div>
         </aside>
+
+        <div className="order-1 flex flex-col self-start rounded-2xl border border-zinc-200/90 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900/80 lg:order-2">
+          <div className="flex flex-wrap items-end justify-between gap-2 border-b border-zinc-100 px-4 py-3 dark:border-zinc-800 sm:px-5">
+            <div>
+              <h2 className="text-sm font-semibold text-blue-800 dark:text-sky-300">Últimas facturas</h2>
+              <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                Las más recientes por fecha de creación
+              </p>
+            </div>
+            {recentRows.length > 0 ? (
+              <Link
+                href="/invoices"
+                className="text-xs font-medium text-brand hover:underline dark:text-accent"
+              >
+                Ver todas →
+              </Link>
+            ) : null}
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[520px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-zinc-100 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+                  <th className="px-4 py-2 font-medium sm:px-5">Número</th>
+                  <th className="px-4 py-2 font-medium sm:px-5">Cliente</th>
+                  <th className="px-4 py-2 font-medium sm:px-5">Importe</th>
+                  <th className="px-4 py-2 font-medium sm:px-5">Estado</th>
+                  <th className="px-4 py-2 font-medium sm:px-5">Fecha</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentRows.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-5 py-6 text-center text-zinc-500 dark:text-zinc-400">
+                      No hay facturas todavía. Crea la primera desde acciones rápidas.
+                    </td>
+                  </tr>
+                ) : (
+                  recentRows.map((row) => (
+                    <tr
+                      key={row.id}
+                      className="border-b border-zinc-50 last:border-0 dark:border-zinc-800/80"
+                    >
+                      <td className="px-4 py-2.5 font-medium text-zinc-900 dark:text-zinc-100 sm:px-5">
+                        <Link href={`/invoices/${row.id}`} className="text-brand hover:underline dark:text-accent">
+                          {row.numberLabel}
+                        </Link>
+                      </td>
+                      <td className="max-w-[140px] truncate px-4 py-2.5 text-zinc-700 dark:text-zinc-300 sm:px-5">
+                        {row.clientName}
+                      </td>
+                      <td className="px-4 py-2.5 tabular-nums text-zinc-900 dark:text-zinc-100 sm:px-5">
+                        {formatMoneyEUR(row.total)}
+                      </td>
+                      <td className="px-4 py-2.5 sm:px-5">
+                        <span
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusBadgeClass(row.status)}`}
+                        >
+                          {statusLabel(row.status)}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-2.5 text-zinc-600 dark:text-zinc-400 sm:px-5">
+                        {formatShortDate(row.date)}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   );
