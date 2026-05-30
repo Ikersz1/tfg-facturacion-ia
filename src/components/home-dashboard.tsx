@@ -86,7 +86,7 @@ function RevenueTrendCard({ months }: { months: MonthlyIncome[] }) {
 }
 
 export function HomeDashboard({ data }: { data: DashboardData }) {
-  const recentRows = data.recentInvoices.slice(0, 7);
+  const recentRows = data.recentInvoices.slice(0, 8);
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-4 py-8 sm:px-6 sm:py-10">
