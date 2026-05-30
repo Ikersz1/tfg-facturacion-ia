@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useId, useLayoutEffect, useRef, useState } from "react";
 import { formatMoneyEUR } from "@/lib/money";
 
 export type LinePoint = { label: string; value: number };
@@ -8,9 +8,7 @@ export type LineSeries = { id: string; name: string; color: string; points: Line
 
 type Props = {
   series: LineSeries[];
-  /** Relleno de área degradado bajo la primera serie. */
   area?: boolean;
-  /** Altura del área de dibujo. */
   heightClassName?: string;
   emptyMessage?: string;
 };
@@ -28,23 +26,52 @@ function yAt(value: number, max: number): number {
   return BOTTOM - (value / max) * (BOTTOM - TOP);
 }
 
-/** Curva suave (Catmull-Rom → Bézier) para un trazo bonito. */
-function smoothPath(coords: { x: number; y: number }[]): string {
+/** Segmentos rectos: siempre une todos los puntos (meses a 0 € incluidos). */
+function polylinePath(coords: { x: number; y: number }[]): string {
   if (coords.length === 0) return "";
-  if (coords.length === 1) return `M ${coords[0].x} ${coords[0].y}`;
-  let d = `M ${coords[0].x} ${coords[0].y}`;
-  for (let i = 0; i < coords.length - 1; i++) {
-    const p0 = coords[i - 1] ?? coords[i];
-    const p1 = coords[i];
-    const p2 = coords[i + 1];
-    const p3 = coords[i + 2] ?? p2;
-    const cp1x = p1.x + (p2.x - p0.x) / 6;
-    const cp1y = p1.y + (p2.y - p0.y) / 6;
-    const cp2x = p2.x - (p3.x - p1.x) / 6;
-    const cp2y = p2.y - (p3.y - p1.y) / 6;
-    d += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
-  }
-  return d;
+  return coords.map((c, i) => `${i === 0 ? "M" : "L"} ${c.x.toFixed(2)} ${c.y.toFixed(2)}`).join(" ");
+}
+
+function AnimatedStrokePath({
+  d,
+  stroke,
+  strokeWidth = 2.5,
+}: {
+  d: string;
+  stroke: string;
+  strokeWidth?: number;
+}) {
+  const ref = useRef<SVGPathElement>(null);
+
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || !d) return;
+    const len = el.getTotalLength();
+    if (len <= 0) return;
+
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.style.strokeDasharray = `${len}`;
+    el.style.strokeDashoffset = reduced ? "0" : `${len}`;
+    el.style.transition = reduced ? "none" : "stroke-dashoffset 1.2s cubic-bezier(0.65, 0, 0.35, 1)";
+
+    if (!reduced) {
+      requestAnimationFrame(() => {
+        el.style.strokeDashoffset = "0";
+      });
+    }
+  }, [d]);
+
+  return (
+    <path
+      ref={ref}
+      d={d}
+      fill="none"
+      stroke={stroke}
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  );
 }
 
 export function AnimatedLineChart({
@@ -62,6 +89,9 @@ export function AnimatedLineChart({
   const max = Math.max(...series.flatMap((s) => s.points.map((p) => p.value)), 1);
   const hasData = n > 0 && series.some((s) => s.points.some((p) => p.value > 0));
 
+  const primaryCoords =
+    series[0]?.points.map((p, i) => ({ x: xAt(i, n), y: yAt(p.value, max) })) ?? [];
+
   function handleMove(e: React.MouseEvent<HTMLDivElement>) {
     if (n <= 0) return;
     const rect = containerRef.current?.getBoundingClientRect();
@@ -78,6 +108,9 @@ export function AnimatedLineChart({
     );
   }
 
+  const lineD = polylinePath(primaryCoords);
+  const areaD = lineD ? `${lineD} L 100 ${BOTTOM} L 0 ${BOTTOM} Z` : "";
+
   return (
     <div className="w-full">
       <div
@@ -86,7 +119,6 @@ export function AnimatedLineChart({
         onMouseMove={handleMove}
         onMouseLeave={() => setActive(null)}
       >
-        {/* Líneas de base horizontales */}
         <div className="pointer-events-none absolute inset-0 flex flex-col justify-between py-1">
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className="h-px w-full bg-zinc-100 dark:bg-zinc-800/70" />
@@ -106,42 +138,39 @@ export function AnimatedLineChart({
             </linearGradient>
           </defs>
 
-          {area && series[0] ? (
-            (() => {
-              const coords = series[0].points.map((p, i) => ({ x: xAt(i, n), y: yAt(p.value, max) }));
-              const line = smoothPath(coords);
-              const areaPath = `${line} L 100 100 L 0 100 Z`;
-              return (
-                <path
-                  className="area-fade"
-                  d={areaPath}
-                  fill={`url(#${gradientId})`}
-                  style={{ animationDelay: "0.9s" }}
-                />
-              );
-            })()
+          {area && areaD ? (
+            <path className="area-fade" d={areaD} fill={`url(#${gradientId})`} style={{ animationDelay: "0.85s" }} />
           ) : null}
 
           {series.map((s) => {
             const coords = s.points.map((p, i) => ({ x: xAt(i, n), y: yAt(p.value, max) }));
-            return (
-              <path
-                key={s.id}
-                className="line-draw"
-                d={smoothPath(coords)}
-                fill="none"
-                stroke={s.color}
-                strokeWidth={2.5}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                pathLength={1}
-                vectorEffect="non-scaling-stroke"
-              />
-            );
+            return <AnimatedStrokePath key={s.id} d={polylinePath(coords)} stroke={s.color} />;
           })}
+
+          {/* Puntos en SVG (alineados con la línea) */}
+          {series.map((s) =>
+            s.points.map((p, i) => {
+              const cx = xAt(i, n);
+              const cy = yAt(p.value, max);
+              const isActive = active === i;
+              const isZero = p.value <= 0;
+              return (
+                <circle
+                  key={`${s.id}-${i}`}
+                  className="dot-pop"
+                  cx={cx}
+                  cy={cy}
+                  r={isActive ? 2.2 : isZero ? 1.2 : 1.8}
+                  fill={isZero ? "transparent" : s.color}
+                  stroke={s.color}
+                  strokeWidth={isZero ? 1.2 : 0}
+                  style={{ animationDelay: `${1 + i * 0.06}s` }}
+                />
+              );
+            }),
+          )}
         </svg>
 
-        {/* Guía vertical en el punto activo */}
         {active !== null ? (
           <div
             className="pointer-events-none absolute top-0 bottom-0 w-px bg-zinc-300 dark:bg-zinc-600"
@@ -149,28 +178,6 @@ export function AnimatedLineChart({
           />
         ) : null}
 
-        {/* Puntos (uno por serie) */}
-        {series.map((s) =>
-          s.points.map((p, i) => {
-            const isActive = active === i;
-            return (
-              <span
-                key={`${s.id}-${i}`}
-                className="dot-pop absolute z-10 block rounded-full border-2 border-white shadow-sm dark:border-zinc-900"
-                style={{
-                  left: `${xAt(i, n)}%`,
-                  top: `${yAt(p.value, max)}%`,
-                  width: isActive ? 12 : 8,
-                  height: isActive ? 12 : 8,
-                  backgroundColor: s.color,
-                  animationDelay: `${1.1 + i * 0.05}s`,
-                }}
-              />
-            );
-          }),
-        )}
-
-        {/* Tooltip */}
         {active !== null ? (
           <div
             className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-full"
@@ -199,7 +206,6 @@ export function AnimatedLineChart({
         ) : null}
       </div>
 
-      {/* Etiquetas del eje X */}
       <div className="mt-2 flex w-full justify-between">
         {labels.map((label, i) => (
           <span
