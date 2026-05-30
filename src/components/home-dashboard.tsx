@@ -151,27 +151,39 @@ export function HomeDashboard({ data }: { data: DashboardData }) {
 
       <RevenueTrendCard months={data.monthlyIncome} />
 
-      <div className="grid gap-8 lg:grid-cols-[1fr_minmax(220px,280px)]">
-        <div className="rounded-2xl border border-zinc-200/90 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900/80">
-          <div className="border-b border-zinc-100 px-5 py-4 dark:border-zinc-800">
-            <h2 className="text-sm font-semibold text-blue-800 dark:text-sky-300">Últimas facturas</h2>
-            <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Las más recientes por fecha de creación</p>
+      <div className="grid gap-6 lg:grid-cols-[1fr_minmax(220px,260px)] lg:items-start">
+        <div className="flex flex-col self-start rounded-2xl border border-zinc-200/90 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900/80">
+          <div className="flex flex-wrap items-end justify-between gap-2 border-b border-zinc-100 px-4 py-3 dark:border-zinc-800 sm:px-5">
+            <div>
+              <h2 className="text-sm font-semibold text-blue-800 dark:text-sky-300">Últimas facturas</h2>
+              <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                Las más recientes por fecha de creación
+              </p>
+            </div>
+            {recentRows.length > 0 ? (
+              <Link
+                href="/invoices"
+                className="text-xs font-medium text-brand hover:underline dark:text-accent"
+              >
+                Ver todas →
+              </Link>
+            ) : null}
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[520px] text-left text-sm">
               <thead>
                 <tr className="border-b border-zinc-100 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
-                  <th className="px-5 py-3 font-medium">Número</th>
-                  <th className="px-5 py-3 font-medium">Cliente</th>
-                  <th className="px-5 py-3 font-medium">Importe</th>
-                  <th className="px-5 py-3 font-medium">Estado</th>
-                  <th className="px-5 py-3 font-medium">Fecha</th>
+                  <th className="px-4 py-2 font-medium sm:px-5">Número</th>
+                  <th className="px-4 py-2 font-medium sm:px-5">Cliente</th>
+                  <th className="px-4 py-2 font-medium sm:px-5">Importe</th>
+                  <th className="px-4 py-2 font-medium sm:px-5">Estado</th>
+                  <th className="px-4 py-2 font-medium sm:px-5">Fecha</th>
                 </tr>
               </thead>
               <tbody>
                 {recentRows.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-5 py-8 text-center text-zinc-500 dark:text-zinc-400">
+                    <td colSpan={5} className="px-5 py-6 text-center text-zinc-500 dark:text-zinc-400">
                       No hay facturas todavía. Crea la primera desde acciones rápidas.
                     </td>
                   </tr>
@@ -181,25 +193,25 @@ export function HomeDashboard({ data }: { data: DashboardData }) {
                       key={row.id}
                       className="border-b border-zinc-50 last:border-0 dark:border-zinc-800/80"
                     >
-                      <td className="px-5 py-3 font-medium text-zinc-900 dark:text-zinc-100">
+                      <td className="px-4 py-2.5 font-medium text-zinc-900 dark:text-zinc-100 sm:px-5">
                         <Link href={`/invoices/${row.id}`} className="text-brand hover:underline dark:text-accent">
                           {row.numberLabel}
                         </Link>
                       </td>
-                      <td className="max-w-[140px] truncate px-5 py-3 text-zinc-700 dark:text-zinc-300">
+                      <td className="max-w-[140px] truncate px-4 py-2.5 text-zinc-700 dark:text-zinc-300 sm:px-5">
                         {row.clientName}
                       </td>
-                      <td className="px-5 py-3 tabular-nums text-zinc-900 dark:text-zinc-100">
+                      <td className="px-4 py-2.5 tabular-nums text-zinc-900 dark:text-zinc-100 sm:px-5">
                         {formatMoneyEUR(row.total)}
                       </td>
-                      <td className="px-5 py-3">
+                      <td className="px-4 py-2.5 sm:px-5">
                         <span
-                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${statusBadgeClass(row.status)}`}
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${statusBadgeClass(row.status)}`}
                         >
                           {statusLabel(row.status)}
                         </span>
                       </td>
-                      <td className="whitespace-nowrap px-5 py-3 text-zinc-600 dark:text-zinc-400">
+                      <td className="whitespace-nowrap px-4 py-2.5 text-zinc-600 dark:text-zinc-400 sm:px-5">
                         {formatShortDate(row.date)}
                       </td>
                     </tr>
@@ -210,15 +222,15 @@ export function HomeDashboard({ data }: { data: DashboardData }) {
           </div>
         </div>
 
-        <aside className="flex flex-col gap-4">
-          <div className="rounded-2xl border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/80">
+        <aside className="self-start rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/80 sm:p-5">
+          <div>
             <h2 className="text-sm font-semibold text-blue-800 dark:text-sky-300">Acciones rápidas</h2>
-            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Crear registros nuevos</p>
-            <ul className="mt-4 flex flex-col gap-2">
+            <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Crear registros nuevos</p>
+            <ul className="mt-3 flex flex-col gap-1.5">
               <li>
                 <Link
                   href="/invoices/new"
-                  className="flex min-h-11 items-center gap-2 rounded-xl border border-zinc-200 bg-brand px-4 text-sm font-medium text-brand-fg shadow-sm transition hover:bg-brand-hover dark:border-brand dark:bg-brand dark:text-brand-fg dark:hover:bg-brand-hover"
+                  className="flex min-h-10 items-center gap-2 rounded-xl border border-zinc-200 bg-brand px-3.5 text-sm font-medium text-brand-fg shadow-sm transition hover:bg-brand-hover dark:border-brand dark:bg-brand dark:text-brand-fg dark:hover:bg-brand-hover"
                 >
                   <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -229,7 +241,7 @@ export function HomeDashboard({ data }: { data: DashboardData }) {
               <li>
                 <Link
                   href="/clients/new"
-                  className="flex min-h-11 items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-900 transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-50 dark:hover:border-zinc-500 dark:hover:bg-zinc-800"
+                  className="flex min-h-10 items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3.5 text-sm font-medium text-zinc-900 transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-50 dark:hover:border-zinc-500 dark:hover:bg-zinc-800"
                 >
                   <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
                     <path
@@ -244,7 +256,7 @@ export function HomeDashboard({ data }: { data: DashboardData }) {
               <li>
                 <Link
                   href="/catalogo/new"
-                  className="flex min-h-11 items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 text-sm font-medium text-zinc-900 transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-50 dark:hover:border-zinc-500 dark:hover:bg-zinc-800"
+                  className="flex min-h-10 items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3.5 text-sm font-medium text-zinc-900 transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-50 dark:hover:border-zinc-500 dark:hover:bg-zinc-800"
                 >
                   <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.75}>
                     <path
@@ -259,16 +271,14 @@ export function HomeDashboard({ data }: { data: DashboardData }) {
             </ul>
           </div>
 
-          <div className="rounded-2xl border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/80">
+          <div className="mt-4 border-t border-zinc-100 pt-4 dark:border-zinc-800">
             <h2 className="text-sm font-semibold text-blue-800 dark:text-sky-300">Accesos rápidos</h2>
-            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-              Atajos a listados frecuentes
-            </p>
-            <ul className="mt-4 flex flex-col gap-2 text-sm">
+            <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">Atajos a listados frecuentes</p>
+            <ul className="mt-3 flex flex-col gap-1.5 text-sm">
               <li>
                 <Link
                   href="/invoices?status=overdue"
-                  className="flex items-center justify-between rounded-lg border border-zinc-200 px-3 py-2 text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                  className="flex items-center justify-between rounded-lg border border-zinc-200 px-3 py-1.5 text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-800"
                 >
                   <span>Facturas vencidas</span>
                   <span aria-hidden>→</span>
@@ -277,7 +287,7 @@ export function HomeDashboard({ data }: { data: DashboardData }) {
               <li>
                 <Link
                   href="/invoices?status=issued"
-                  className="flex items-center justify-between rounded-lg border border-zinc-200 px-3 py-2 text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                  className="flex items-center justify-between rounded-lg border border-zinc-200 px-3 py-1.5 text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-800"
                 >
                   <span>Pendientes de cobro</span>
                   <span aria-hidden>→</span>
@@ -286,7 +296,7 @@ export function HomeDashboard({ data }: { data: DashboardData }) {
               <li>
                 <Link
                   href="/invoices?status=draft"
-                  className="flex items-center justify-between rounded-lg border border-zinc-200 px-3 py-2 text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                  className="flex items-center justify-between rounded-lg border border-zinc-200 px-3 py-1.5 text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-800"
                 >
                   <span>Borradores</span>
                   <span aria-hidden>→</span>
@@ -295,7 +305,7 @@ export function HomeDashboard({ data }: { data: DashboardData }) {
               <li>
                 <Link
                   href="/invoices?status=paid"
-                  className="flex items-center justify-between rounded-lg border border-zinc-200 px-3 py-2 text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                  className="flex items-center justify-between rounded-lg border border-zinc-200 px-3 py-1.5 text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-800"
                 >
                   <span>Pagadas</span>
                   <span aria-hidden>→</span>
