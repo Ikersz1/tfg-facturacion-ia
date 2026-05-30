@@ -86,6 +86,8 @@ function RevenueTrendCard({ months }: { months: MonthlyIncome[] }) {
 }
 
 export function HomeDashboard({ data }: { data: DashboardData }) {
+  const recentRows = data.recentInvoices.slice(0, 5);
+
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-4 py-8 sm:px-6 sm:py-10">
       <HomeAssistantCta />
@@ -167,14 +169,14 @@ export function HomeDashboard({ data }: { data: DashboardData }) {
                 </tr>
               </thead>
               <tbody>
-                {data.recentInvoices.length === 0 ? (
+                {recentRows.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-5 py-8 text-center text-zinc-500 dark:text-zinc-400">
                       No hay facturas todavía. Crea la primera desde acciones rápidas.
                     </td>
                   </tr>
                 ) : (
-                  data.recentInvoices.map((row) => (
+                  recentRows.map((row) => (
                     <tr
                       key={row.id}
                       className="border-b border-zinc-50 last:border-0 dark:border-zinc-800/80"
@@ -252,6 +254,51 @@ export function HomeDashboard({ data }: { data: DashboardData }) {
                     />
                   </svg>
                   Nuevo en catálogo
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          <div className="rounded-2xl border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/80">
+            <h2 className="text-sm font-semibold text-blue-800 dark:text-sky-300">Accesos rápidos</h2>
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+              Atajos a listados frecuentes
+            </p>
+            <ul className="mt-4 flex flex-col gap-2 text-sm">
+              <li>
+                <Link
+                  href="/invoices?status=overdue"
+                  className="flex items-center justify-between rounded-lg border border-zinc-200 px-3 py-2 text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                >
+                  <span>Facturas vencidas</span>
+                  <span aria-hidden>→</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/invoices?status=issued"
+                  className="flex items-center justify-between rounded-lg border border-zinc-200 px-3 py-2 text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                >
+                  <span>Pendientes de cobro</span>
+                  <span aria-hidden>→</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/invoices?status=draft"
+                  className="flex items-center justify-between rounded-lg border border-zinc-200 px-3 py-2 text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                >
+                  <span>Borradores</span>
+                  <span aria-hidden>→</span>
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/invoices?status=paid"
+                  className="flex items-center justify-between rounded-lg border border-zinc-200 px-3 py-2 text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                >
+                  <span>Pagadas</span>
+                  <span aria-hidden>→</span>
                 </Link>
               </li>
             </ul>

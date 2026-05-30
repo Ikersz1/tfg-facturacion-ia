@@ -37,7 +37,10 @@ const SECTIONS: { title: string; items: NavItem[] }[] = [
   },
   {
     title: "Configuración",
-    items: [{ label: "Automatización", href: "/automatizacion", icon: "zap" }],
+    items: [
+      { label: "Automatización", href: "/automatizacion", icon: "zap" },
+      { label: "Asistente IA", href: "/settings/asistente", icon: "spark" },
+    ],
   },
 ];
 
