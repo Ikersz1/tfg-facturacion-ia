@@ -52,13 +52,20 @@ function AnimatedStrokePath({
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     el.style.strokeDasharray = `${len}`;
     el.style.strokeDashoffset = reduced ? "0" : `${len}`;
-    el.style.transition = reduced ? "none" : "stroke-dashoffset 1.2s cubic-bezier(0.65, 0, 0.35, 1)";
+    el.style.transition = "none";
 
-    if (!reduced) {
-      requestAnimationFrame(() => {
+    if (reduced) return;
+
+    // Doble rAF: garantiza que el navegador registra el estado inicial antes de animar.
+    const raf1 = requestAnimationFrame(() => {
+      const raf2 = requestAnimationFrame(() => {
+        el.style.transition = "stroke-dashoffset 1.5s cubic-bezier(0.65, 0, 0.35, 1)";
         el.style.strokeDashoffset = "0";
       });
-    }
+      cleanup.id = raf2;
+    });
+    const cleanup = { id: raf1 };
+    return () => cancelAnimationFrame(cleanup.id);
   }, [d]);
 
   return (
@@ -156,29 +163,49 @@ export function AnimatedLineChart({
           />
         ) : null}
 
-        {/* Puntos como HTML: círculos perfectos, sin deformación por el escalado del SVG */}
-        {series.map((s) =>
-          s.points.map((p, i) => {
-            const isActive = active === i;
-            const isZero = p.value <= 0;
-            const size = isActive ? 11 : isZero ? 6 : 8;
-            return (
-              <span
-                key={`${s.id}-${i}`}
-                className="dot-pop pointer-events-none absolute z-10 block rounded-full border-2 border-white shadow-sm dark:border-zinc-900"
-                style={{
-                  left: `${xAt(i, n)}%`,
-                  top: `${yAt(p.value, max)}%`,
-                  width: size,
-                  height: size,
-                  transform: "translate(-50%, -50%)",
-                  backgroundColor: isZero ? "#cbd5e1" : s.color,
-                  animationDelay: `${1 + i * 0.06}s`,
-                }}
-              />
-            );
-          }),
-        )}
+        {/* Punto fijo del último valor (mes actual) — aparece al terminar el trazado */}
+        {series.map((s) => {
+          const last = s.points.length - 1;
+          if (last < 0 || active === last) return null;
+          const p = s.points[last];
+          return (
+            <span
+              key={`${s.id}-last`}
+              className="dot-pop pointer-events-none absolute z-10 block rounded-full border-2 border-white shadow-sm dark:border-zinc-900"
+              style={{
+                left: `${xAt(last, n)}%`,
+                top: `${yAt(p.value, max)}%`,
+                width: 9,
+                height: 9,
+                transform: "translate(-50%, -50%)",
+                backgroundColor: s.color,
+                animationDelay: "1.25s",
+              }}
+            />
+          );
+        })}
+
+        {/* Punto resaltado del mes bajo el cursor */}
+        {active !== null
+          ? series.map((s) => {
+              const p = s.points[active];
+              if (!p) return null;
+              return (
+                <span
+                  key={`${s.id}-active`}
+                  className="pointer-events-none absolute z-20 block rounded-full border-2 border-white shadow dark:border-zinc-900"
+                  style={{
+                    left: `${xAt(active, n)}%`,
+                    top: `${yAt(p.value, max)}%`,
+                    width: 12,
+                    height: 12,
+                    transform: "translate(-50%, -50%)",
+                    backgroundColor: s.color,
+                  }}
+                />
+              );
+            })
+          : null}
 
         {active !== null ? (
           <div
