@@ -70,6 +70,7 @@ function AnimatedStrokePath({
       strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
+      vectorEffect="non-scaling-stroke"
     />
   );
 }
@@ -126,7 +127,7 @@ export function AnimatedLineChart({
         </div>
 
         <svg
-          className="absolute inset-0 h-full w-full overflow-visible"
+          className="absolute inset-0 h-full w-full"
           viewBox="0 0 100 100"
           preserveAspectRatio="none"
           aria-hidden
@@ -146,29 +147,6 @@ export function AnimatedLineChart({
             const coords = s.points.map((p, i) => ({ x: xAt(i, n), y: yAt(p.value, max) }));
             return <AnimatedStrokePath key={s.id} d={polylinePath(coords)} stroke={s.color} />;
           })}
-
-          {/* Puntos en SVG (alineados con la línea) */}
-          {series.map((s) =>
-            s.points.map((p, i) => {
-              const cx = xAt(i, n);
-              const cy = yAt(p.value, max);
-              const isActive = active === i;
-              const isZero = p.value <= 0;
-              return (
-                <circle
-                  key={`${s.id}-${i}`}
-                  className="dot-pop"
-                  cx={cx}
-                  cy={cy}
-                  r={isActive ? 2.2 : isZero ? 1.2 : 1.8}
-                  fill={isZero ? "transparent" : s.color}
-                  stroke={s.color}
-                  strokeWidth={isZero ? 1.2 : 0}
-                  style={{ animationDelay: `${1 + i * 0.06}s` }}
-                />
-              );
-            }),
-          )}
         </svg>
 
         {active !== null ? (
@@ -177,6 +155,30 @@ export function AnimatedLineChart({
             style={{ left: `${xAt(active, n)}%` }}
           />
         ) : null}
+
+        {/* Puntos como HTML: círculos perfectos, sin deformación por el escalado del SVG */}
+        {series.map((s) =>
+          s.points.map((p, i) => {
+            const isActive = active === i;
+            const isZero = p.value <= 0;
+            const size = isActive ? 11 : isZero ? 6 : 8;
+            return (
+              <span
+                key={`${s.id}-${i}`}
+                className="dot-pop pointer-events-none absolute z-10 block rounded-full border-2 border-white shadow-sm dark:border-zinc-900"
+                style={{
+                  left: `${xAt(i, n)}%`,
+                  top: `${yAt(p.value, max)}%`,
+                  width: size,
+                  height: size,
+                  transform: "translate(-50%, -50%)",
+                  backgroundColor: isZero ? "#cbd5e1" : s.color,
+                  animationDelay: `${1 + i * 0.06}s`,
+                }}
+              />
+            );
+          }),
+        )}
 
         {active !== null ? (
           <div
