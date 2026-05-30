@@ -5,7 +5,8 @@ import { InvoicesFiltersPanel } from "@/components/invoices-filters-panel";
 import { InvoicesVerifactuBulkButton } from "@/components/invoices-verifactu-bulk-button";
 import { PageHeader } from "@/components/page-header";
 import { effectiveInvoiceStatus } from "@/lib/invoice-status";
-import { parseInvoiceListSearch } from "@/lib/invoice-list-url";
+import { InvoicesPagination } from "@/components/invoices-pagination";
+import { INVOICES_PAGE_SIZE, parseInvoiceListSearch } from "@/lib/invoice-list-url";
 import { formatMoneyEUR, roundCurrencyEUR } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
 
@@ -156,6 +157,14 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
       filters.segment,
   );
 
+  const totalItems = tableRows.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / INVOICES_PAGE_SIZE));
+  const currentPage = Math.min(filters.page ?? 1, totalPages);
+  const pageRows = tableRows.slice(
+    (currentPage - 1) * INVOICES_PAGE_SIZE,
+    currentPage * INVOICES_PAGE_SIZE,
+  );
+
   return (
     <div className="flex w-full flex-1 flex-col">
       <PageHeader eyebrow="Gestión" title="Facturas" />
@@ -241,7 +250,7 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
               </tr>
             </thead>
             <tbody>
-              {tableRows.map((inv) => {
+              {pageRows.map((inv) => {
                 const cr = inv.clients as { name: string } | { name: string }[] | null;
                 const client = Array.isArray(cr) ? cr[0] : cr;
                 const displayStatus = effectiveInvoiceStatus({
@@ -317,6 +326,12 @@ export default async function InvoicesPage({ searchParams }: PageProps) {
               })}
             </tbody>
           </table>
+          <InvoicesPagination
+            page={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            filters={filters}
+          />
         </div>
       )}
       </div>

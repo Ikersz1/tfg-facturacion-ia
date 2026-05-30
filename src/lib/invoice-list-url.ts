@@ -37,6 +37,8 @@ export function getPresetDateRange(
   return { from: formatYMD(first), to: formatYMD(last) };
 }
 
+export const INVOICES_PAGE_SIZE = 10;
+
 export type InvoiceListFilters = {
   client_id?: string;
   status?: string;
@@ -44,7 +46,19 @@ export type InvoiceListFilters = {
   to?: string;
   /** Desde informes (donut): paid | pend | due — mismo criterio que el gráfico. */
   segment?: string;
+  page?: number;
 };
+
+export function buildInvoicesListPageUrl(filters: InvoiceListFilters, page: number): string {
+  return buildInvoicesListUrl({
+    client_id: filters.client_id,
+    status: filters.status,
+    from: filters.from,
+    to: filters.to,
+    segment: filters.segment,
+    page: page > 1 ? String(page) : undefined,
+  });
+}
 
 export function parseInvoiceListSearch(
   raw: Record<string, string | string[] | undefined>,
@@ -53,11 +67,15 @@ export function parseInvoiceListSearch(
     const v = raw[k];
     return typeof v === "string" ? v : undefined;
   };
+  const pageRaw = g("page");
+  const page = pageRaw ? Math.max(1, parseInt(pageRaw, 10) || 1) : 1;
+
   return {
     client_id: g("client_id"),
     status: g("status"),
     from: g("from"),
     to: g("to"),
     segment: g("segment"),
+    page,
   };
 }
