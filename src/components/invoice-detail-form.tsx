@@ -330,9 +330,20 @@ export function InvoiceDetailForm({
         invoice.verifacti_last_error ||
         invoice.verifacti_uuid) ? (
         <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
-          <h2 className="mb-3 text-sm font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-            Verifactu (Verifacti)
-          </h2>
+          <div className="mb-3 flex items-start justify-between gap-4">
+            <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+              Verifactu (Verifacti)
+            </h2>
+            {invoice.verifacti_qr_base64 ? (
+              /* Base64 dinámico de Verifacti: no usar next/image */
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={verifactiQrDataUrl(invoice.verifacti_qr_base64)}
+                alt="QR Verifactu"
+                className="h-36 w-36 shrink-0 border border-zinc-200 bg-white object-contain dark:border-zinc-600"
+              />
+            ) : null}
+          </div>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <dl className="grid min-w-0 flex-1 gap-3 text-sm">
               {invoice.verifacti_registro_estado ? (
@@ -375,18 +386,6 @@ export function InvoiceDetailForm({
                 </div>
               ) : null}
             </dl>
-            {invoice.verifacti_qr_base64 ? (
-              <div className="flex shrink-0 flex-col items-end gap-2 self-end sm:self-start">
-                <span className="text-sm text-zinc-500 dark:text-zinc-400">Código QR</span>
-                {/* Base64 dinámico de Verifacti: no usar next/image */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={verifactiQrDataUrl(invoice.verifacti_qr_base64)}
-                  alt="QR Verifactu"
-                  className="h-40 w-40 border border-zinc-200 bg-white object-contain dark:border-zinc-600"
-                />
-              </div>
-            ) : null}
           </div>
           {invoice.verifacti_uuid ? (
             <form action={vfStatusForm} className="mt-4 flex flex-col gap-2 border-t border-zinc-200 pt-4 dark:border-zinc-700">
