@@ -62,6 +62,32 @@ export async function createDraftInvoiceAction(
   redirect(`/invoices/${data.id}`);
 }
 
+export async function deleteDraftInvoiceAction(
+  _prev: InvoiceActionState,
+  formData: FormData,
+): Promise<InvoiceActionState> {
+  const invoiceId = formData.get("invoice_id")?.toString();
+  if (!invoiceId) return { error: "Falta factura." };
+
+  const supabase = await createClient();
+  const { data: inv, error: invErr } = await supabase
+    .from("invoices")
+    .select("id, status")
+    .eq("id", invoiceId)
+    .single();
+
+  if (invErr || !inv) return { error: "Factura no encontrada." };
+  if (inv.status !== "draft") {
+    return { error: "Solo se pueden eliminar facturas en borrador." };
+  }
+
+  const { error } = await supabase.from("invoices").delete().eq("id", invoiceId);
+  if (error) return { error: error.message };
+
+  revalidatePath("/invoices");
+  redirect("/invoices");
+}
+
 export async function addInvoiceLineAction(
   _prev: InvoiceActionState,
   formData: FormData,
@@ -144,6 +170,63 @@ export async function deleteInvoiceLineAction(
   }
 
   const { error } = await supabase.from("invoice_lines").delete().eq("id", lineId);
+  if (error) return { error: error.message };
+
+  await recalculateInvoiceTotals(supabase, invoiceId);
+  revalidatePath(`/invoices/${invoiceId}`);
+  revalidatePath("/invoices");
+  return { ok: true };
+}
+
+export async function updateInvoiceLineAction(
+  _prev: InvoiceActionState,
+  formData: FormData,
+): Promise<InvoiceActionState> {
+  const lineId = formData.get("line_id")?.toString();
+  const invoiceId = formData.get("invoice_id")?.toString();
+  if (!lineId || !invoiceId) return { error: "Datos incompletos." };
+
+  const description = formData.get("description")?.toString().trim();
+  if (!description) return { error: "Descripción obligatoria." };
+
+  const qty = Number(formData.get("quantity")?.toString().replace(",", "."));
+  if (Number.isNaN(qty) || qty <= 0) return { error: "Cantidad no válida." };
+
+  const unit = Number(formData.get("unit_price")?.toString().replace(",", "."));
+  if (Number.isNaN(unit) || unit < 0) return { error: "Precio no válido." };
+
+  const taxRaw = formData.get("tax_rate")?.toString().trim();
+  const tax = taxRaw ? Number(taxRaw.replace(",", ".")) : 21;
+  if (Number.isNaN(tax) || tax < 0 || tax > 100) return { error: "IVA no válido." };
+
+  const productId = formData.get("product_id")?.toString().trim() || null;
+
+  const supabase = await createClient();
+  const { data: inv } = await supabase
+    .from("invoices")
+    .select("status")
+    .eq("id", invoiceId)
+    .single();
+  if (!inv || inv.status !== "draft") {
+    return { error: "Solo se pueden editar líneas en borrador." };
+  }
+
+  const { line_net, line_tax, line_total } = lineAmounts(qty, unit, tax);
+  const { error } = await supabase
+    .from("invoice_lines")
+    .update({
+      product_id: productId,
+      description,
+      quantity: qty,
+      unit_price: unit,
+      tax_rate: tax,
+      line_net,
+      line_tax,
+      line_total,
+    })
+    .eq("id", lineId)
+    .eq("invoice_id", invoiceId);
+
   if (error) return { error: error.message };
 
   await recalculateInvoiceTotals(supabase, invoiceId);
@@ -399,6 +482,69 @@ export async function issueInvoiceAction(
   revalidatePath(`/invoices/${invoiceId}`);
   revalidatePath("/invoices");
   return warn ? { ok: true, warn } : { ok: true };
+}
+
+export async function cancelInvoiceAction(
+  _prev: InvoiceActionState,
+  formData: FormData,
+): Promise<InvoiceActionState> {
+  const invoiceId = formData.get("invoice_id")?.toString();
+  if (!invoiceId) return { error: "Falta factura." };
+
+  const supabase = await createClient();
+  const { data: inv, error: invErr } = await supabase
+    .from("invoices")
+    .select("id, status, total")
+    .eq("id", invoiceId)
+    .single();
+
+  if (invErr || !inv) return { error: "Factura no encontrada." };
+
+  const status = String(inv.status);
+  if (status === "draft") {
+    return { error: "Los borradores no se anulan: edítalos o elimínalos." };
+  }
+  if (status === "cancelled") {
+    return { error: "La factura ya está anulada." };
+  }
+  if (!["issued", "partial", "overdue"].includes(status)) {
+    return { error: "Solo se pueden anular facturas emitidas, parciales o vencidas." };
+  }
+
+  const { data: payRows } = await supabase
+    .from("payments")
+    .select("amount")
+    .eq("invoice_id", invoiceId);
+  const paidSum = roundCurrencyEUR(
+    (payRows ?? []).reduce((s, p) => s + Number(p.amount), 0),
+  );
+  const total = roundCurrencyEUR(Number(inv.total));
+  if (paidSum >= total) {
+    return { error: "No puedes anular una factura pagada completamente." };
+  }
+
+  const { error: upErr } = await supabase
+    .from("invoices")
+    .update({ status: "cancelled" })
+    .eq("id", invoiceId);
+  if (upErr) return { error: upErr.message };
+
+  await supabase.from("invoice_events").insert({
+    invoice_id: invoiceId,
+    event_type: "cancelled",
+    payload: {
+      previous_status: status,
+      paid_sum: paidSum,
+      invoice_total: total,
+      outstanding: roundCurrencyEUR(Math.max(0, total - paidSum)),
+    },
+  });
+
+  revalidatePath(`/invoices/${invoiceId}`);
+  revalidatePath("/invoices");
+  revalidatePath("/informes");
+  revalidatePath("/");
+  return { ok: true };
 }
 
 export async function createRectificativeDraftAction(

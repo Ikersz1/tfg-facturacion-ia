@@ -37,7 +37,7 @@ export default async function InvoiceDetailPage(props: PageProps) {
   const { data: lines } = await supabase
     .from("invoice_lines")
     .select(
-      "id, line_number, description, quantity, unit_price, tax_rate, line_net, line_tax, line_total",
+      "id, line_number, product_id, description, quantity, unit_price, tax_rate, line_net, line_tax, line_total",
     )
     .eq("invoice_id", id)
     .order("line_number", { ascending: true });
@@ -92,6 +92,7 @@ export default async function InvoiceDetailPage(props: PageProps) {
             (lines ?? []).map((l) => ({
               id: l.id,
               line_number: l.line_number,
+              product_id: l.product_id,
               description: l.description,
               quantity: Number(l.quantity),
               unit_price: Number(l.unit_price),

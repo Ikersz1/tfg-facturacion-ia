@@ -4,8 +4,11 @@ import { useActionState, useCallback, useEffect, useMemo, useRef, useState } fro
 import { useRouter } from "next/navigation";
 import {
   addInvoiceLineAction,
+  cancelInvoiceAction,
+  deleteDraftInvoiceAction,
   deleteInvoiceLineAction,
   issueInvoiceAction,
+  updateInvoiceLineAction,
   type InvoiceActionState,
 } from "@/app/actions/invoices";
 import {
@@ -25,6 +28,7 @@ const vfStatusInitial: VerifactiStatusActionState = {};
 type Line = {
   id: string;
   line_number: number;
+  product_id?: string | null;
   description: string;
   quantity: number;
   unit_price: number;
@@ -127,6 +131,12 @@ export function InvoiceDetailForm({
 
   const [showAddLineForm, setShowAddLineForm] = useState(false);
   const [showAddPaymentForm, setShowAddPaymentForm] = useState(false);
+  const [editingLineId, setEditingLineId] = useState<string | null>(null);
+  const [editLineProductId, setEditLineProductId] = useState("");
+  const [editLineDescription, setEditLineDescription] = useState("");
+  const [editLineQuantity, setEditLineQuantity] = useState("1");
+  const [editLineUnitPrice, setEditLineUnitPrice] = useState("");
+  const [editLineTaxRate, setEditLineTaxRate] = useState("21");
 
   const productById = useMemo(() => {
     const m = new Map<string, ProductOpt>();
@@ -182,12 +192,34 @@ export function InvoiceDetailForm({
     addLineAndMaybeClose,
     initial,
   );
+  const updateLineAndMaybeClose = useCallback(
+    async (prev: InvoiceActionState, formData: FormData) => {
+      const result = await updateInvoiceLineAction(prev, formData);
+      if (result?.ok) {
+        setEditingLineId(null);
+      }
+      return result;
+    },
+    [],
+  );
+  const [editState, updateLine, editPending] = useActionState(
+    updateLineAndMaybeClose,
+    initial,
+  );
   const [delState, deleteLine, delPending] = useActionState(
     deleteInvoiceLineAction,
     initial,
   );
+  const [cancelState, cancelForm, cancelPending] = useActionState(
+    cancelInvoiceAction,
+    initial,
+  );
   const [issueState, issueForm, issuePending] = useActionState(
     issueInvoiceAction,
+    initial,
+  );
+  const [deleteDraftState, deleteDraftForm, deleteDraftPending] = useActionState(
+    deleteDraftInvoiceAction,
     initial,
   );
   const [vfStatusState, vfStatusForm, vfStatusPending] = useActionState(
@@ -244,6 +276,35 @@ export function InvoiceDetailForm({
     invoice.number != null
       ? `${invoice.series}-${invoice.year}/${invoice.number}`
       : `${invoice.series}-${invoice.year}/borrador`;
+
+  const startEditingLine = useCallback(
+    (line: Line) => {
+      setEditingLineId(line.id);
+      setEditLineProductId(line.product_id ?? "");
+      setEditLineDescription(line.description);
+      setEditLineQuantity(String(line.quantity));
+      setEditLineUnitPrice(formatUnitForInput(line.unit_price));
+      setEditLineTaxRate(formatTaxForInput(line.tax_rate));
+    },
+    [],
+  );
+
+  const stopEditingLine = useCallback(() => {
+    setEditingLineId(null);
+  }, []);
+
+  const onEditLineProductChange = useCallback(
+    (productId: string) => {
+      setEditLineProductId(productId);
+      if (!productId) return;
+      const p = productById.get(productId);
+      if (!p) return;
+      setEditLineDescription(p.name);
+      setEditLineUnitPrice(formatUnitForInput(p.unit_price));
+      setEditLineTaxRate(formatTaxForInput(p.tax_rate));
+    },
+    [productById],
+  );
 
   return (
     <div className="flex flex-col gap-8">
@@ -489,17 +550,36 @@ export function InvoiceDetailForm({
                     </td>
                     {isDraft ? (
                       <td className="px-3 py-2">
-                        <form action={deleteLine}>
-                          <input type="hidden" name="invoice_id" value={invoice.id} />
-                          <input type="hidden" name="line_id" value={l.id} />
+                        {editingLineId === l.id ? (
                           <button
-                            type="submit"
-                            disabled={delPending}
-                            className="text-xs font-medium text-red-600 hover:underline disabled:opacity-50 dark:text-red-400"
+                            type="button"
+                            onClick={stopEditingLine}
+                            className="text-xs font-medium text-zinc-600 hover:underline dark:text-zinc-300"
                           >
-                            Quitar
+                            Cerrar edición
                           </button>
-                        </form>
+                        ) : (
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => startEditingLine(l)}
+                              className="text-xs font-medium text-accent hover:underline"
+                            >
+                              Editar
+                            </button>
+                            <form action={deleteLine}>
+                              <input type="hidden" name="invoice_id" value={invoice.id} />
+                              <input type="hidden" name="line_id" value={l.id} />
+                              <button
+                                type="submit"
+                                disabled={delPending}
+                                className="text-xs font-medium text-red-600 hover:underline disabled:opacity-50 dark:text-red-400"
+                              >
+                                Quitar
+                              </button>
+                            </form>
+                          </div>
+                        )}
                       </td>
                     ) : null}
                   </tr>
@@ -545,6 +625,140 @@ export function InvoiceDetailForm({
           <p className="mt-2 text-sm text-red-600 dark:text-red-400" role="alert">
             {delState.error}
           </p>
+        ) : null}
+        {editState?.error ? (
+          <p className="mt-2 text-sm text-red-600 dark:text-red-400" role="alert">
+            {editState.error}
+          </p>
+        ) : null}
+
+        {isDraft && editingLineId ? (
+          <div className="mt-4">
+            <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-md ring-1 ring-zinc-950/5 dark:border-zinc-600 dark:bg-zinc-900 dark:ring-white/10">
+              <div className="flex flex-col gap-4 border-b border-zinc-100 bg-gradient-to-r from-brand-soft via-white to-brand-soft/40 px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-6 dark:border-zinc-800 dark:from-brand-soft/30 dark:via-zinc-900 dark:to-zinc-900/80">
+                <div className="min-w-0 space-y-1">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-300">
+                    Editar línea
+                  </p>
+                  <h3 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+                    Línea existente
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={stopEditingLine}
+                  className="shrink-0 self-start rounded-full border border-zinc-200 bg-white/90 px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm transition hover:border-zinc-300 hover:bg-white dark:border-zinc-600 dark:bg-zinc-800/90 dark:text-zinc-200 dark:hover:border-zinc-500 dark:hover:bg-zinc-800"
+                >
+                  Cerrar
+                </button>
+              </div>
+
+              <form action={updateLine} className="flex flex-col gap-6 p-5 sm:p-6">
+                <input type="hidden" name="invoice_id" value={invoice.id} />
+                <input type="hidden" name="line_id" value={editingLineId} />
+
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                    Origen
+                  </p>
+                  <label className="flex flex-col gap-2">
+                    <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                      Producto del catálogo{" "}
+                      <span className="font-normal text-zinc-500 dark:text-zinc-400">(opcional)</span>
+                    </span>
+                    <select
+                      name="product_id"
+                      value={editLineProductId}
+                      onChange={(e) => onEditLineProductChange(e.target.value)}
+                      className="rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-50 dark:focus:border-blue-400 dark:focus:ring-blue-400/30"
+                    >
+                      <option value="">— Línea libre (sin catálogo) —</option>
+                      {products.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} · {catalogKindLabel(parseCatalogKind(p.kind))} ·{" "}
+                          {formatMoneyEUR(p.unit_price)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                    Concepto
+                  </p>
+                  <label className="flex flex-col gap-2">
+                    <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                      Descripción <span className="text-red-600 dark:text-red-400">*</span>
+                    </span>
+                    <input
+                      name="description"
+                      required
+                      value={editLineDescription}
+                      onChange={(e) => setEditLineDescription(e.target.value)}
+                      className="rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-50 dark:focus:border-blue-400 dark:focus:ring-blue-400/30"
+                    />
+                  </label>
+                </div>
+
+                <div className="rounded-xl border border-zinc-100 bg-zinc-50/80 p-4 dark:border-zinc-800 dark:bg-zinc-950/50">
+                  <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                    Importes e impuestos
+                  </p>
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                        Cantidad
+                      </span>
+                      <input
+                        name="quantity"
+                        required
+                        value={editLineQuantity}
+                        onChange={(e) => setEditLineQuantity(e.target.value)}
+                        inputMode="decimal"
+                        className="rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-sm tabular-nums text-zinc-900 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-50 dark:focus:border-blue-400 dark:focus:ring-blue-400/30"
+                      />
+                    </label>
+                    <label className="flex flex-col gap-2">
+                      <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                        Precio unitario (€) <span className="text-red-600 dark:text-red-400">*</span>
+                      </span>
+                      <input
+                        name="unit_price"
+                        required
+                        value={editLineUnitPrice}
+                        onChange={(e) => setEditLineUnitPrice(e.target.value)}
+                        inputMode="decimal"
+                        className="rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-sm tabular-nums text-zinc-900 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-50 dark:focus:border-blue-400 dark:focus:ring-blue-400/30"
+                      />
+                    </label>
+                    <label className="flex flex-col gap-2 sm:col-span-1">
+                      <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                        IVA (%)
+                      </span>
+                      <input
+                        name="tax_rate"
+                        value={editLineTaxRate}
+                        onChange={(e) => setEditLineTaxRate(e.target.value)}
+                        inputMode="decimal"
+                        className="rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-sm tabular-nums text-zinc-900 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-50 dark:focus:border-blue-400 dark:focus:ring-blue-400/30"
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3 border-t border-zinc-100 pt-2 dark:border-zinc-800 sm:flex-row sm:items-center sm:justify-end">
+                  <button
+                    type="submit"
+                    disabled={editPending}
+                    className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-blue-600 px-6 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-60 dark:bg-blue-500 dark:hover:bg-blue-400 dark:focus:ring-blue-400 dark:focus:ring-offset-zinc-900 sm:w-auto sm:min-w-[11rem]"
+                  >
+                    {editPending ? "Guardando…" : "Guardar cambios"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         ) : null}
 
         {isDraft && showAddLineForm ? (
@@ -943,60 +1157,124 @@ export function InvoiceDetailForm({
       ) : null}
 
       {isDraft ? (
-        <form
-          action={issueForm}
-          className="flex flex-col gap-4 rounded-xl border border-brand-border bg-brand-soft p-6 dark:border-brand-border/50 dark:bg-brand-soft"
-        >
-          <h3 className="font-semibold text-accent">
-            Emitir factura
-          </h3>
-          {invoice.clients &&
-          (!invoice.clients.tax_id?.trim() || !invoice.clients.address?.trim()) ? (
-            <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
-              Antes de emitir, el cliente necesita{" "}
-              {!invoice.clients.tax_id?.trim() ? "NIF/CIF" : null}
-              {!invoice.clients.tax_id?.trim() && !invoice.clients.address?.trim()
-                ? " y "
-                : null}
-              {!invoice.clients.address?.trim() ? "domicilio fiscal (calle, CP y ciudad)" : null}.{" "}
-              <Link
-                href={`/clients/${invoice.client_id}?edit=1`}
-                className="font-medium underline hover:text-amber-700 dark:hover:text-amber-200"
-              >
-                Editar cliente
-              </Link>
-            </p>
-          ) : null}
-          <input type="hidden" name="invoice_id" value={invoice.id} />
-          <label className="flex max-w-xs flex-col gap-1 text-sm">
-            <span className="font-medium text-accent">
-              Vencimiento (opcional)
-            </span>
-            <input
-              type="date"
-              name="due_date"
-              className="rounded-lg border border-brand-border bg-white px-3 py-2 text-zinc-900 dark:border-brand-border/60 dark:bg-zinc-900 dark:text-zinc-50"
-            />
-          </label>
-          {issueState?.error ? (
-            <p className="text-sm text-red-700 dark:text-red-300" role="alert">
-              {issueState.error}
-            </p>
-          ) : null}
-          {issueState?.warn ? (
-            <p className="text-sm text-amber-800 dark:text-amber-200" role="status">
-              {issueState.warn}
-            </p>
-          ) : null}
-          <button
-            type="submit"
-            disabled={issuePending}
-            className="inline-flex h-10 max-w-xs items-center justify-center rounded-lg bg-brand px-4 text-sm font-medium text-brand-fg hover:bg-brand-hover disabled:opacity-60"
+        <div className="flex flex-col gap-4">
+          <form
+            action={issueForm}
+            className="flex flex-col gap-4 rounded-xl border border-brand-border bg-brand-soft p-6 dark:border-brand-border/50 dark:bg-brand-soft"
           >
-            {issuePending ? "Emitiendo…" : "Emitir y numerar"}
-          </button>
-        </form>
-      ) : null}
+            <h3 className="font-semibold text-accent">
+              Emitir factura
+            </h3>
+            {invoice.clients &&
+            (!invoice.clients.tax_id?.trim() || !invoice.clients.address?.trim()) ? (
+              <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
+                Antes de emitir, el cliente necesita{" "}
+                {!invoice.clients.tax_id?.trim() ? "NIF/CIF" : null}
+                {!invoice.clients.tax_id?.trim() && !invoice.clients.address?.trim()
+                  ? " y "
+                  : null}
+                {!invoice.clients.address?.trim() ? "domicilio fiscal (calle, CP y ciudad)" : null}.{" "}
+                <Link
+                  href={`/clients/${invoice.client_id}?edit=1`}
+                  className="font-medium underline hover:text-amber-700 dark:hover:text-amber-200"
+                >
+                  Editar cliente
+                </Link>
+              </p>
+            ) : null}
+            <input type="hidden" name="invoice_id" value={invoice.id} />
+            <label className="flex max-w-xs flex-col gap-1 text-sm">
+              <span className="font-medium text-accent">
+                Vencimiento (opcional)
+              </span>
+              <input
+                type="date"
+                name="due_date"
+                className="rounded-lg border border-brand-border bg-white px-3 py-2 text-zinc-900 dark:border-brand-border/60 dark:bg-zinc-900 dark:text-zinc-50"
+              />
+            </label>
+            {issueState?.error ? (
+              <p className="text-sm text-red-700 dark:text-red-300" role="alert">
+                {issueState.error}
+              </p>
+            ) : null}
+            {issueState?.warn ? (
+              <p className="text-sm text-amber-800 dark:text-amber-200" role="status">
+                {issueState.warn}
+              </p>
+            ) : null}
+            <button
+              type="submit"
+              disabled={issuePending}
+              className="inline-flex h-10 max-w-xs items-center justify-center rounded-lg bg-brand px-4 text-sm font-medium text-brand-fg hover:bg-brand-hover disabled:opacity-60"
+            >
+              {issuePending ? "Emitiendo…" : "Emitir y numerar"}
+            </button>
+          </form>
+
+          <form
+            action={deleteDraftForm}
+            onSubmit={(e) => {
+              if (!window.confirm("¿Seguro que quieres eliminar este borrador? Esta acción no se puede deshacer.")) {
+                e.preventDefault();
+              }
+            }}
+            className="flex flex-col gap-3 rounded-xl border border-rose-200 bg-rose-50 p-6 dark:border-rose-900/40 dark:bg-rose-950/20"
+          >
+            <h3 className="font-semibold text-rose-800 dark:text-rose-200">
+              Eliminar borrador
+            </h3>
+            <p className="text-sm text-rose-700 dark:text-rose-300">
+              Si no necesitas esta factura en borrador, puedes eliminarla definitivamente.
+            </p>
+            <input type="hidden" name="invoice_id" value={invoice.id} />
+            {deleteDraftState?.error ? (
+              <p className="text-sm text-red-700 dark:text-red-300" role="alert">
+                {deleteDraftState.error}
+              </p>
+            ) : null}
+            <button
+              type="submit"
+              disabled={deleteDraftPending}
+              className="inline-flex h-10 max-w-xs items-center justify-center rounded-lg bg-rose-600 px-4 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-60 dark:bg-rose-500 dark:hover:bg-rose-400"
+            >
+              {deleteDraftPending ? "Eliminando…" : "Eliminar borrador"}
+            </button>
+          </form>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4 rounded-xl border border-rose-200 bg-rose-50 p-6 dark:border-rose-900/40 dark:bg-rose-950/20">
+          <h3 className="font-semibold text-rose-800 dark:text-rose-200">
+            Anular factura
+          </h3>
+          <p className="text-sm text-rose-700 dark:text-rose-300">
+            Esta acción marca la factura como anulada y deja de contar en facturado, pendiente y vencido.
+          </p>
+          <form
+            action={cancelForm}
+            onSubmit={(e) => {
+              if (!window.confirm("¿Seguro que quieres anular esta factura? Esta acción no se puede deshacer desde esta pantalla.")) {
+                e.preventDefault();
+              }
+            }}
+            className="flex flex-col gap-3"
+          >
+            <input type="hidden" name="invoice_id" value={invoice.id} />
+            {cancelState?.error ? (
+              <p className="text-sm text-red-700 dark:text-red-300" role="alert">
+                {cancelState.error}
+              </p>
+            ) : null}
+            <button
+              type="submit"
+              disabled={cancelPending || displayStatus === "cancelled"}
+              className="inline-flex h-10 max-w-xs items-center justify-center rounded-lg bg-rose-600 px-4 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-60 dark:bg-rose-500 dark:hover:bg-rose-400"
+            >
+              {cancelPending ? "Anulando…" : displayStatus === "cancelled" ? "Factura anulada" : "Anular factura"}
+            </button>
+          </form>
+        </div>
+      )}
 
     </div>
   );
