@@ -3,9 +3,11 @@ import { PageBackButton } from "@/components/page-back-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const HEADER_MAX = "max-w-5xl";
-/** Hueco fijo (misma anchura que el botón atrás) para que título y eyebrow queden alineados con o sin flecha */
-const BACK_SLOT_CLASS =
-  "flex w-11 shrink-0 justify-start self-start pt-0.5";
+/**
+ * Hueco fijo (misma anchura que el botón atrás) para alinear título/eyebrow
+ * con o sin flecha de navegación.
+ */
+const BACK_SLOT_CLASS = "flex w-11 shrink-0 justify-start self-start pt-0.5";
 
 type PageHeaderProps = {
   eyebrow?: ReactNode;
@@ -33,8 +35,7 @@ export function PageHeader({
       ? "font-mono text-xs text-zinc-500 dark:text-zinc-400"
       : "text-xs font-semibold uppercase tracking-wider text-accent";
 
-  const titleClass =
-    "text-xl font-semibold tracking-tight text-zinc-900 sm:text-2xl dark:text-zinc-50";
+  const titleClass = "text-xl font-semibold tracking-tight text-zinc-900 sm:text-2xl dark:text-zinc-50";
 
   return (
     <header
@@ -48,14 +49,12 @@ export function PageHeader({
         </div>
       ) : null}
 
-      <div
-        className={`mx-auto flex w-full min-w-0 ${HEADER_MAX} items-start gap-2 px-4 py-4 sm:gap-3 sm:px-6 sm:py-5`}
-      >
+      <div className={`mx-auto flex w-full min-w-0 ${HEADER_MAX} items-start gap-2 px-4 py-4 sm:gap-3 sm:px-6 sm:py-5`}>
         {/* Hueco fijo: títulos alineados con o sin flecha; la flecha va en absolute al borde */}
         <div className={BACK_SLOT_CLASS} aria-hidden />
 
-        <div className="flex min-w-0 flex-1 items-start justify-between gap-4">
-          <div className="min-w-0 flex-1 -translate-x-2 sm:-translate-x-20">
+        <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+          <div className="min-w-0 flex-1">
             <div className="space-y-1.5">
               {eyebrow ? <p className={eyebrowClass}>{eyebrow}</p> : null}
               <h1 className={titleClass}>{title}</h1>
@@ -66,7 +65,7 @@ export function PageHeader({
               </div>
             ) : null}
           </div>
-          <div className="flex shrink-0 items-center gap-2 pt-0.5">
+          <div className="flex w-full flex-wrap items-center justify-end gap-2 pt-0.5 sm:w-auto sm:shrink-0 sm:flex-nowrap">
             {actions}
             <ThemeToggle />
           </div>

@@ -49,13 +49,13 @@ export function ClientsFiltersPanel({ actionSlot }: { actionSlot?: ReactNode }) 
   }, [commit, draftQ]);
 
   const ctrl =
-    "h-10 min-h-10 rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100";
+    "h-10 min-h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100";
 
   return (
     <div className="mb-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
         <div className="flex min-w-0 flex-1 flex-wrap items-end gap-x-3 gap-y-2">
-          <div className="flex min-w-0 flex-1 flex-col gap-1 sm:min-w-[12rem] sm:max-w-md">
+          <div className="flex min-w-0 w-full flex-1 flex-col gap-1 sm:min-w-[12rem] sm:max-w-md">
             <label htmlFor="flt-client-q" className={lbl}>
               Buscar
             </label>
@@ -88,7 +88,7 @@ export function ClientsFiltersPanel({ actionSlot }: { actionSlot?: ReactNode }) 
             </div>
           </div>
 
-          <div className="flex flex-col gap-1">
+          <div className="flex w-full flex-col gap-1 sm:w-auto">
             <label htmlFor="flt-client-sort" className={lbl}>
               Orden
             </label>
@@ -96,7 +96,7 @@ export function ClientsFiltersPanel({ actionSlot }: { actionSlot?: ReactNode }) 
               id="flt-client-sort"
               value={filters.sort ?? ""}
               onChange={(e) => commit({ sort: e.target.value })}
-              className={`${ctrl} w-[11rem] sm:w-[12.5rem]`}
+              className={`${ctrl} sm:w-[12.5rem]`}
             >
               <option value="">Más recientes</option>
               <option value="name_asc">Nombre A → Z</option>
@@ -105,7 +105,7 @@ export function ClientsFiltersPanel({ actionSlot }: { actionSlot?: ReactNode }) 
           </div>
 
           {hasActiveFilters ? (
-            <div className="flex items-end pb-0.5">
+            <div className="flex w-full items-end pb-0.5 sm:w-auto">
               <Link
                 href={buildClientsListUrl({
                   kind:
@@ -113,7 +113,7 @@ export function ClientsFiltersPanel({ actionSlot }: { actionSlot?: ReactNode }) 
                       ? "individual"
                       : "company",
                 })}
-                className="group inline-flex h-10 items-center gap-2 rounded-md border border-zinc-200 bg-white px-3.5 text-sm font-medium text-zinc-600 shadow-sm outline-none transition hover:border-brand-border hover:bg-brand-soft hover:text-accent focus-visible:ring-2 focus-visible:ring-brand/30 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300 dark:shadow-none dark:hover:border-brand-border dark:hover:bg-brand-soft dark:hover:text-accent dark:focus-visible:ring-brand/35 dark:focus-visible:ring-offset-zinc-900"
+                className="group inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-zinc-200 bg-white px-3.5 text-sm font-medium text-zinc-600 shadow-sm outline-none transition hover:border-brand-border hover:bg-brand-soft hover:text-accent focus-visible:ring-2 focus-visible:ring-brand/30 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300 dark:shadow-none dark:hover:border-brand-border dark:hover:bg-brand-soft dark:hover:text-accent dark:focus-visible:ring-brand/35 dark:focus-visible:ring-offset-zinc-900 sm:w-auto sm:justify-start"
                 title="Quitar todos los filtros"
               >
                 <svg

@@ -71,13 +71,13 @@ export function InvoicesFiltersPanel({
   );
 
   const ctrl =
-    "h-10 min-h-10 rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100";
+    "h-10 min-h-10 w-full rounded-md border border-zinc-200 bg-white px-3 text-sm text-zinc-900 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100";
 
   return (
     <div className="mb-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
         <div className="flex min-w-0 flex-1 flex-wrap items-end gap-x-3 gap-y-2">
-        <div className="flex min-w-0 flex-col gap-1">
+        <div className="flex min-w-0 w-full flex-col gap-1 sm:w-auto">
           <label htmlFor="flt-client" className={lbl}>
             Cliente
           </label>
@@ -85,7 +85,7 @@ export function InvoicesFiltersPanel({
             id="flt-client"
             value={filters.client_id ?? ""}
             onChange={(e) => commit({ client_id: e.target.value })}
-            className={`${ctrl} max-w-[11rem] sm:max-w-[14rem]`}
+            className={`${ctrl} sm:w-[14rem]`}
           >
             <option value="">Todos</option>
             {clients.map((c) => (
@@ -96,7 +96,7 @@ export function InvoicesFiltersPanel({
           </select>
         </div>
 
-        <div className="flex flex-col gap-1">
+        <div className="flex w-full flex-col gap-1 sm:w-auto">
           <label htmlFor="flt-status" className={lbl}>
             Estado
           </label>
@@ -104,7 +104,7 @@ export function InvoicesFiltersPanel({
             id="flt-status"
             value={filters.status ?? ""}
             onChange={(e) => commit({ status: e.target.value })}
-            className={`${ctrl} w-[8.5rem]`}
+            className={`${ctrl} sm:w-[9.5rem]`}
           >
             {STATUS_OPTS.map((o) => (
               <option key={o.value || "all"} value={o.value}>
@@ -114,34 +114,34 @@ export function InvoicesFiltersPanel({
           </select>
         </div>
 
-        <div className="flex min-w-0 flex-col gap-1">
+        <div className="flex min-w-0 w-full flex-col gap-1 sm:w-auto">
           <span className={lbl}>Emisión (fecha factura)</span>
-          <div className="flex items-center gap-1">
+          <div className="flex min-w-0 flex-col items-stretch gap-1.5 sm:flex-row sm:items-center">
             <input
               id="flt-from"
               type="date"
               value={filters.from ?? ""}
               onChange={(e) => commit({ from: e.target.value })}
-              className={`${ctrl} w-[10.25rem]`}
+              className={`${ctrl} sm:w-[10.25rem]`}
               title="Desde"
             />
-            <span className="pb-1 text-xs text-zinc-400">a</span>
+            <span className="hidden pb-1 text-xs text-zinc-400 sm:inline">a</span>
             <input
               id="flt-to"
               type="date"
               value={filters.to ?? ""}
               onChange={(e) => commit({ to: e.target.value })}
-              className={`${ctrl} w-[10.25rem]`}
+              className={`${ctrl} sm:w-[10.25rem]`}
               title="Hasta"
             />
           </div>
         </div>
 
         {hasActiveFilters ? (
-          <div className="flex items-end pb-0.5">
+          <div className="flex w-full items-end pb-0.5 sm:w-auto">
             <Link
               href="/invoices"
-              className="group inline-flex h-10 items-center gap-2 rounded-md border border-zinc-200 bg-white px-3.5 text-sm font-medium text-zinc-600 shadow-sm outline-none transition hover:border-brand-border hover:bg-brand-soft hover:text-accent focus-visible:ring-2 focus-visible:ring-brand/30 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300 dark:shadow-none dark:hover:border-brand-border dark:hover:bg-brand-soft dark:hover:text-accent dark:focus-visible:ring-brand/35 dark:focus-visible:ring-offset-zinc-900"
+              className="group inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-zinc-200 bg-white px-3.5 text-sm font-medium text-zinc-600 shadow-sm outline-none transition hover:border-brand-border hover:bg-brand-soft hover:text-accent focus-visible:ring-2 focus-visible:ring-brand/30 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300 dark:shadow-none dark:hover:border-brand-border dark:hover:bg-brand-soft dark:hover:text-accent dark:focus-visible:ring-brand/35 dark:focus-visible:ring-offset-zinc-900 sm:w-auto sm:justify-start"
               title="Quitar todos los filtros"
             >
               <svg
