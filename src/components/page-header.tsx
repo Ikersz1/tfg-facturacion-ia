@@ -53,7 +53,7 @@ export function PageHeader({
         {/* Hueco fijo: títulos alineados con o sin flecha; la flecha va en absolute al borde */}
         <div className={BACK_SLOT_CLASS} aria-hidden />
 
-        <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div className="relative flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div className="min-w-0 flex-1">
             <div className="space-y-1.5">
               {eyebrow ? <p className={eyebrowClass}>{eyebrow}</p> : null}
@@ -65,8 +65,11 @@ export function PageHeader({
               </div>
             ) : null}
           </div>
-          <div className="flex w-full flex-wrap items-center justify-end gap-2 pt-0.5 sm:w-auto sm:shrink-0 sm:flex-nowrap sm:justify-end">
+          <div className="flex w-full flex-wrap items-center justify-start gap-2 pr-12 pt-0.5 sm:w-auto sm:shrink-0 sm:flex-nowrap sm:justify-end sm:pr-0">
             {actions}
+          </div>
+
+          <div className="absolute right-0 top-0 sm:static sm:pt-0.5">
             <ThemeToggle />
           </div>
         </div>
