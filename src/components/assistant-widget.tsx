@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AssistantChat } from "@/components/assistant-chat";
 
@@ -15,15 +16,22 @@ export function openAssistantWidget(payload?: { question?: string; source?: stri
 }
 
 export function AssistantWidget() {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [pendingQuestion, setPendingQuestion] = useState<string | undefined>(undefined);
   const [pendingQuestionRequestId, setPendingQuestionRequestId] = useState<number | undefined>(undefined);
+  const [navigatingFromAssistant, setNavigatingFromAssistant] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
   const close = useCallback(() => {
     setOpen(false);
     setPendingQuestion(undefined);
   }, []);
+
+  const handleNavigateFromAssistant = useCallback(() => {
+    setNavigatingFromAssistant(true);
+    close();
+  }, [close]);
 
   useEffect(() => {
     function onOpen(event: Event) {
@@ -35,6 +43,17 @@ export function AssistantWidget() {
     window.addEventListener(EVENT_NAME, onOpen);
     return () => window.removeEventListener(EVENT_NAME, onOpen);
   }, []);
+
+  useEffect(() => {
+    if (!navigatingFromAssistant) return;
+    setNavigatingFromAssistant(false);
+  }, [pathname, navigatingFromAssistant]);
+
+  useEffect(() => {
+    if (!navigatingFromAssistant) return;
+    const timeout = window.setTimeout(() => setNavigatingFromAssistant(false), 5000);
+    return () => window.clearTimeout(timeout);
+  }, [navigatingFromAssistant]);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -131,7 +150,7 @@ export function AssistantWidget() {
             initialQuestion={pendingQuestion}
             initialQuestionToken={pendingQuestionRequestId}
             onInitialQuestionConsumed={() => setPendingQuestion(undefined)}
-            onNavigateFromAssistant={close}
+            onNavigateFromAssistant={handleNavigateFromAssistant}
             suggestions={[
               "¿Qué cliente me debe más?",
               "¿Qué facturas vencen esta semana?",
@@ -141,6 +160,15 @@ export function AssistantWidget() {
           />
         </div>
       </aside>
+
+      {navigatingFromAssistant ? (
+        <div className="fixed bottom-5 left-1/2 z-[70] -translate-x-1/2 rounded-full border border-zinc-200 bg-white/95 px-3 py-2 text-xs font-medium text-zinc-700 shadow-md backdrop-blur dark:border-zinc-700 dark:bg-zinc-900/95 dark:text-zinc-200">
+          <span className="inline-flex items-center gap-2">
+            <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-zinc-300 border-t-brand dark:border-zinc-600 dark:border-t-accent" />
+            Abriendo página...
+          </span>
+        </div>
+      ) : null}
     </>
   );
 }
