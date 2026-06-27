@@ -49,13 +49,14 @@ export async function askAssistant(
     return { text: loaded.error, links: [] };
   }
   const { ctx } = loaded;
+  const recentMemory = session?.memory?.recent ?? [];
 
   if (session?.pendingPayment) {
     const followUp = await handlePaymentFollowUp(q, session.pendingPayment, ctx);
     if (followUp) return followUp;
   }
 
-  const payIntent = parseRegisterPaymentIntent(q);
+  const payIntent = parseRegisterPaymentIntent(q) ?? inferRegisterPaymentFromMemory(q, recentMemory, ctx.clients);
   if (payIntent) {
     return prepareRegisterPayment(ctx, payIntent.amountEur, payIntent.clientName);
   }
@@ -64,7 +65,7 @@ export async function askAssistant(
   let usedLlmRouter = false;
 
   if (!toolCall) {
-    const picked = await pickToolWithOpenAI(q);
+    const picked = await pickToolWithOpenAI(q, recentMemory);
     if (picked.ok) {
       toolCall = picked.tool;
       usedLlmRouter = true;
@@ -100,7 +101,7 @@ export async function askAssistant(
   const skipPolish = PAYMENT_TOOLS.has(toolCall.name);
   let text = skipPolish
     ? formatToolResultAsText(toolCall.name, result)
-    : ((await polishAnswerWithOpenAI(q, toolCall.name, result.payload)) ??
+    : ((await polishAnswerWithOpenAI(q, toolCall.name, result.payload, recentMemory)) ??
       formatToolResultAsText(toolCall.name, result));
 
   const uniqueLinks = dedupeLinks(result.links);
@@ -110,6 +111,60 @@ export async function askAssistant(
     links: uniqueLinks.slice(0, 6),
     toolUsed: usedLlmRouter ? toolCall.name : undefined,
   };
+}
+
+function inferRegisterPaymentFromMemory(
+  question: string,
+  recent: { role: "user" | "assistant"; text: string }[],
+  clients: { id: string; name: string }[],
+): { amountEur: number; clientName: string } | null {
+  const amountEur = parseAmountEur(question);
+  if (!amountEur) return null;
+
+  const assistantAskedPaymentDetails = recent.some(
+    (entry) =>
+      entry.role === "assistant" &&
+      /(nombre del cliente|importe|registrar el cobro|cobrado)/i.test(entry.text),
+  );
+  if (!assistantAskedPaymentDetails) return null;
+
+  const clientName = resolveClientNameFromRecentMemory(recent, clients);
+  if (!clientName) return null;
+
+  return { amountEur, clientName };
+}
+
+function parseAmountEur(text: string): number | null {
+  const q = text.trim();
+  if (!q) return null;
+  const amountMatch =
+    q.match(/(\d{1,8})(?:[.,](\d{1,2}))?\s*(?:€|eur|euros?)?/i) ??
+    q.match(/(?:€|eur|euros?)\s*(\d{1,8})(?:[.,](\d{1,2}))?/i);
+  if (!amountMatch) return null;
+  const whole = amountMatch[1] ?? "";
+  const frac = amountMatch[2];
+  const parsed = Number.parseFloat((frac != null ? `${whole}.${frac}` : whole).replace(",", "."));
+  if (!Number.isFinite(parsed) || parsed <= 0) return null;
+  return Math.round(parsed * 100) / 100;
+}
+
+function resolveClientNameFromRecentMemory(
+  recent: { role: "user" | "assistant"; text: string }[],
+  clients: { id: string; name: string }[],
+): string | null {
+  const userMessages = recent
+    .filter((entry) => entry.role === "user")
+    .map((entry) => entry.text.toLowerCase())
+    .reverse();
+
+  for (const message of userMessages) {
+    for (const client of clients) {
+      if (message.includes(client.name.toLowerCase())) {
+        return client.name;
+      }
+    }
+  }
+  return null;
 }
 
 function dedupeLinks(links: { label: string; href: string }[]) {

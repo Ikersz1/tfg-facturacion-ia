@@ -23,7 +23,10 @@ Reglas de enrutado:
 
 Si no encaja ninguna herramienta y no es meta-pregunta, responde invitando a reformular con un ejemplo concreto.`;
 
-export async function pickToolWithOpenAI(question: string): Promise<
+export async function pickToolWithOpenAI(
+  question: string,
+  recentMemory: { role: "user" | "assistant"; text: string }[] = [],
+): Promise<
   | { ok: true; tool: ToolCall }
   | { ok: false; directAnswer?: string; error?: string }
 > {
@@ -33,6 +36,7 @@ export async function pickToolWithOpenAI(question: string): Promise<
   }
 
   const model = process.env.OPENAI_MODEL?.trim() || "gpt-4o-mini";
+  const memorySystem = formatRecentMemoryForOpenAI(recentMemory);
 
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -45,6 +49,7 @@ export async function pickToolWithOpenAI(question: string): Promise<
       temperature: 0.1,
       messages: [
         { role: "system", content: SYSTEM },
+        ...(memorySystem ? [{ role: "system" as const, content: memorySystem }] : []),
         { role: "user", content: question },
       ],
       tools: ASSISTANT_OPENAI_TOOLS,
@@ -89,6 +94,7 @@ export async function polishAnswerWithOpenAI(
   question: string,
   toolName: string,
   toolPayload: Record<string, unknown>,
+  recentMemory: { role: "user" | "assistant"; text: string }[] = [],
 ): Promise<string | null> {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
   if (!apiKey || process.env.ASSISTANT_SKIP_POLISH === "1") {
@@ -96,6 +102,7 @@ export async function polishAnswerWithOpenAI(
   }
 
   const model = process.env.OPENAI_MODEL?.trim() || "gpt-4o-mini";
+  const memorySystem = formatRecentMemoryForOpenAI(recentMemory);
 
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -112,6 +119,7 @@ export async function polishAnswerWithOpenAI(
           content:
             "Redacta en español una respuesta breve (máx. 6 frases) para el usuario de un panel de facturación. Usa SOLO los datos JSON proporcionados. No inventes cifras ni nombres. No menciones NIF ni datos fiscales. Tono profesional y claro. Si la pregunta habla de «mejor cliente» y los datos son de facturación acumulada, no hables de deuda. Si los datos son deudores/morosidad, no digas que es el «mejor» cliente.",
         },
+        ...(memorySystem ? [{ role: "system" as const, content: memorySystem }] : []),
         {
           role: "user",
           content: `Pregunta: ${question}\nHerramienta: ${toolName}\nDatos (JSON): ${JSON.stringify(toolPayload)}`,
@@ -126,4 +134,14 @@ export async function polishAnswerWithOpenAI(
     choices?: { message?: { content?: string } }[];
   };
   return json.choices?.[0]?.message?.content?.trim() ?? null;
+}
+
+function formatRecentMemoryForOpenAI(
+  recentMemory: { role: "user" | "assistant"; text: string }[],
+): string | null {
+  if (!recentMemory.length) return null;
+  const lines = recentMemory
+    .slice(-6)
+    .map((entry) => `${entry.role === "user" ? "Usuario" : "Asistente"}: ${entry.text}`);
+  return `Contexto reciente de conversación (puede ayudar a resolver elipsis):\n${lines.join("\n")}`;
 }

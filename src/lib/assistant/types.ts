@@ -30,6 +30,9 @@ export type PaymentChoice = {
 
 export type AssistantSessionContext = {
   pendingPayment?: PendingPaymentSession | null;
+  memory?: {
+    recent: { role: "user" | "assistant"; text: string }[];
+  };
 };
 
 export type AssistantReply = {

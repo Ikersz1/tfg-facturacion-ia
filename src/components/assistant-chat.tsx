@@ -9,7 +9,7 @@ import {
   saveAssistantChatSnapshot,
   type StoredChatEntry,
 } from "@/lib/assistant/chat-storage";
-import type { PaymentChoice, PendingPaymentSession } from "@/lib/assistant/types";
+import type { AssistantSessionContext, PaymentChoice, PendingPaymentSession } from "@/lib/assistant/types";
 
 const initial: AssistantActionState = {};
 
@@ -21,6 +21,23 @@ const DEFAULT_SUGGESTIONS = [
 ];
 
 type ChatEntry = StoredChatEntry;
+const MEMORY_MAX_ENTRIES = 8;
+const MEMORY_MAX_TEXT = 180;
+
+function buildSessionContext(
+  history: ChatEntry[],
+  pendingPayment: PendingPaymentSession | null,
+): AssistantSessionContext {
+  return {
+    pendingPayment,
+    memory: {
+      recent: history.slice(-MEMORY_MAX_ENTRIES).map((entry) => ({
+        role: entry.role,
+        text: entry.text.slice(0, MEMORY_MAX_TEXT),
+      })),
+    },
+  };
+}
 
 export function AssistantChat({
   suggestions,
@@ -60,6 +77,10 @@ export function AssistantChat({
     () => (suggestions && suggestions.length > 0 ? suggestions : DEFAULT_SUGGESTIONS),
     [suggestions],
   );
+  const sessionContext = useMemo(
+    () => buildSessionContext(history, pendingPayment),
+    [history, pendingPayment],
+  );
 
   const dispatchQuestionToAssistant = useCallback(
     (question: string) => {
@@ -67,12 +88,12 @@ export function AssistantChat({
       if (!q || isPending) return;
       const fd = new FormData();
       fd.set("question", q);
-      fd.set("context", JSON.stringify({ pendingPayment }));
+      fd.set("context", JSON.stringify(sessionContext));
       startTransition(() => {
         formAction(fd);
       });
     },
-    [formAction, isPending, pendingPayment],
+    [formAction, isPending, sessionContext],
   );
 
   useEffect(() => {
@@ -398,7 +419,7 @@ export function AssistantChat({
       <input
         type="hidden"
         name="context"
-        value={JSON.stringify({ pendingPayment })}
+        value={JSON.stringify(sessionContext)}
         readOnly
       />
       <label htmlFor={`assistant-q-${mode}`} className="sr-only">
