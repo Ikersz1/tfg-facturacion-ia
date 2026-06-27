@@ -61,7 +61,7 @@ export default async function RootLayout({
         {isAuthPage ? null : <AppSidebar userEmail={userEmail} />}
         {isAuthPage ? null : <AssistantWidget />}
         <div
-          className={`flex min-h-screen flex-1 flex-col${isAuthPage ? "" : " pt-12 md:pt-0 md:pl-64"}`}
+          className={`flex min-h-screen flex-1 flex-col${isAuthPage ? "" : " md:pl-64"}`}
         >
           {children}
         </div>

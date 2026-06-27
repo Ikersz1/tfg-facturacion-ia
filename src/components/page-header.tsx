@@ -65,7 +65,7 @@ export function PageHeader({
               </div>
             ) : null}
           </div>
-          <div className="flex w-full flex-wrap items-center justify-start gap-2 pt-0.5 sm:w-auto sm:shrink-0 sm:flex-nowrap sm:justify-end">
+          <div className="flex w-full flex-wrap items-center justify-end gap-2 pt-0.5 sm:w-auto sm:shrink-0 sm:flex-nowrap sm:justify-end">
             {actions}
             <ThemeToggle />
           </div>
