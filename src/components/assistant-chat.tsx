@@ -46,6 +46,7 @@ export function AssistantChat({
   const formRef = useRef<HTMLFormElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const lastHandledInitialToken = useRef<number | undefined>(undefined);
+  const queuedAutoSubmitQuestion = useRef<string | null>(null);
   const speechSupported = useMemo(() => {
     if (typeof window === "undefined") return false;
     const w = window as Window & {
@@ -101,6 +102,7 @@ export function AssistantChat({
     lastHandledInitialToken.current = initialQuestionToken;
     const q = initialQuestion.trim();
     setDraft(q);
+    queuedAutoSubmitQuestion.current = q;
     setHistory((h) => [...h, { id: `u-init-${initialQuestionToken}`, role: "user", text: q }]);
     requestAnimationFrame(() => formRef.current?.requestSubmit());
     onInitialQuestionConsumed?.();
@@ -110,6 +112,7 @@ export function AssistantChat({
     const q = question.trim();
     if (!q || isPending) return;
     setDraft(q);
+    queuedAutoSubmitQuestion.current = q;
     setHistory((h) => [...h, { id: `u-${Date.now()}`, role: "user", text: q }]);
     requestAnimationFrame(() => formRef.current?.requestSubmit());
   }
@@ -120,6 +123,7 @@ export function AssistantChat({
     setPendingPayment(null);
     setPaymentChoices([]);
     setDraft("");
+    queuedAutoSubmitQuestion.current = null;
     lastHandledInitialToken.current = undefined;
   }
 
@@ -365,11 +369,12 @@ export function AssistantChat({
       }`}
       onSubmit={(e) => {
         const fd = new FormData(e.currentTarget);
-        const q = fd.get("question")?.toString().trim();
+        const q = (fd.get("question")?.toString().trim() || queuedAutoSubmitQuestion.current || "").trim();
         if (!q) {
           e.preventDefault();
           return;
         }
+        queuedAutoSubmitQuestion.current = null;
         setHistory((h) => {
           const last = h[h.length - 1];
           if (last?.role === "user" && last.text === q) return h;
