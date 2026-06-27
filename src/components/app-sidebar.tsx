@@ -299,7 +299,7 @@ export function AppSidebar({ userEmail }: { userEmail?: string | null }) {
         aria-expanded={mobileOpen}
         aria-controls="app-sidebar-nav"
         onClick={() => setMobileOpen((o) => !o)}
-        className="fixed left-3 top-3 z-50 flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-200 bg-brand-soft/40 text-zinc-700 shadow-sm backdrop-blur md:hidden dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+        className="fixed left-2.5 top-2.5 z-50 flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-brand-soft/40 text-zinc-700 shadow-sm backdrop-blur md:hidden dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
       >
         <span className="sr-only">{mobileOpen ? "Cerrar menú" : "Abrir menú"}</span>
         {mobileOpen ? (

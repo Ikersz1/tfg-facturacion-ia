@@ -7,7 +7,7 @@ const HEADER_MAX = "max-w-5xl";
  * Hueco fijo (misma anchura que el botón atrás) para alinear título/eyebrow
  * con o sin flecha de navegación.
  */
-const BACK_SLOT_CLASS = "flex w-11 shrink-0 justify-start self-start pt-0.5";
+const BACK_SLOT_CLASS = "hidden w-11 shrink-0 justify-start self-start pt-0.5 sm:flex";
 
 type PageHeaderProps = {
   eyebrow?: ReactNode;
@@ -65,7 +65,7 @@ export function PageHeader({
               </div>
             ) : null}
           </div>
-          <div className="flex w-full flex-wrap items-center justify-end gap-2 pt-0.5 sm:w-auto sm:shrink-0 sm:flex-nowrap">
+          <div className="flex w-full flex-wrap items-center justify-start gap-2 pt-0.5 sm:w-auto sm:shrink-0 sm:flex-nowrap sm:justify-end">
             {actions}
             <ThemeToggle />
           </div>
