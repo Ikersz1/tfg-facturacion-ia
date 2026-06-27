@@ -26,11 +26,13 @@ export function AssistantChat({
   suggestions,
   mode = "page",
   initialQuestion,
+  initialQuestionToken,
   onInitialQuestionConsumed,
 }: {
   suggestions?: string[];
   mode?: "page" | "sidebar";
   initialQuestion?: string;
+  initialQuestionToken?: number;
   onInitialQuestionConsumed?: () => void;
 }) {
   const isSidebar = mode === "sidebar";
@@ -43,7 +45,7 @@ export function AssistantChat({
   const [listening, setListening] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
-  const initialSent = useRef(false);
+  const lastHandledInitialToken = useRef<number | undefined>(undefined);
   const speechSupported = useMemo(() => {
     if (typeof window === "undefined") return false;
     const w = window as Window & {
@@ -94,19 +96,15 @@ export function AssistantChat({
   }, [history, isPending]);
 
   useEffect(() => {
-    if (!hydrated || !initialQuestion?.trim() || initialSent.current) return;
-    if (history.length > 0) {
-      initialSent.current = true;
-      onInitialQuestionConsumed?.();
-      return;
-    }
-    initialSent.current = true;
+    if (!hydrated || !initialQuestion?.trim() || initialQuestionToken === undefined) return;
+    if (lastHandledInitialToken.current === initialQuestionToken) return;
+    lastHandledInitialToken.current = initialQuestionToken;
     const q = initialQuestion.trim();
     setDraft(q);
-    setHistory([{ id: `u-init`, role: "user", text: q }]);
+    setHistory((h) => [...h, { id: `u-init-${initialQuestionToken}`, role: "user", text: q }]);
     requestAnimationFrame(() => formRef.current?.requestSubmit());
     onInitialQuestionConsumed?.();
-  }, [hydrated, initialQuestion, history.length, onInitialQuestionConsumed]);
+  }, [hydrated, initialQuestion, initialQuestionToken, onInitialQuestionConsumed]);
 
   function submitQuestion(question: string) {
     const q = question.trim();
@@ -122,7 +120,7 @@ export function AssistantChat({
     setPendingPayment(null);
     setPaymentChoices([]);
     setDraft("");
-    initialSent.current = false;
+    lastHandledInitialToken.current = undefined;
   }
 
   function startVoiceInput() {
@@ -377,6 +375,7 @@ export function AssistantChat({
           if (last?.role === "user" && last.text === q) return h;
           return [...h, { id: `u-${Date.now()}`, role: "user", text: q }];
         });
+        setDraft("");
       }}
     >
       <input

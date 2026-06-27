@@ -7,12 +7,17 @@ const EVENT_NAME = "tfg:open-assistant";
 
 export function openAssistantWidget(payload?: { question?: string; source?: string }) {
   if (typeof window === "undefined") return;
-  window.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: payload ?? {} }));
+  window.dispatchEvent(
+    new CustomEvent(EVENT_NAME, {
+      detail: { ...(payload ?? {}), requestId: Date.now() },
+    }),
+  );
 }
 
 export function AssistantWidget() {
   const [open, setOpen] = useState(false);
   const [pendingQuestion, setPendingQuestion] = useState<string | undefined>(undefined);
+  const [pendingQuestionRequestId, setPendingQuestionRequestId] = useState<number | undefined>(undefined);
   const panelRef = useRef<HTMLDivElement>(null);
 
   const close = useCallback(() => {
@@ -22,8 +27,9 @@ export function AssistantWidget() {
 
   useEffect(() => {
     function onOpen(event: Event) {
-      const detail = (event as CustomEvent<{ question?: string }>).detail;
+      const detail = (event as CustomEvent<{ question?: string; requestId?: number }>).detail;
       setPendingQuestion(detail?.question?.trim() || undefined);
+      setPendingQuestionRequestId(detail?.requestId ?? Date.now());
       setOpen(true);
     }
     window.addEventListener(EVENT_NAME, onOpen);
@@ -123,6 +129,7 @@ export function AssistantWidget() {
           <AssistantChat
             mode="sidebar"
             initialQuestion={pendingQuestion}
+            initialQuestionToken={pendingQuestionRequestId}
             onInitialQuestionConsumed={() => setPendingQuestion(undefined)}
             suggestions={[
               "¿Qué cliente me debe más?",
