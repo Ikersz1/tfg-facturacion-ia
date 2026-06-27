@@ -103,7 +103,7 @@ export default async function ClientsPage({ searchParams }: PageProps) {
             actionSlot={
               <Link
                 href={newHref}
-                className="inline-flex h-10 items-center rounded-lg bg-brand px-4 text-sm font-medium text-brand-fg shadow-sm hover:bg-brand-hover"
+                className="inline-flex h-10 w-full items-center justify-center rounded-lg bg-brand px-4 text-sm font-medium text-brand-fg shadow-sm hover:bg-brand-hover sm:w-auto sm:justify-start"
               >
                 Nuevo {kind === "individual" ? "particular" : "cliente"}
               </Link>
@@ -158,7 +158,7 @@ export default async function ClientsPage({ searchParams }: PageProps) {
             </p>
           ) : (
             <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
-              <table className="w-full min-w-[32rem] text-left text-sm">
+              <table className="w-full min-w-[28rem] text-left text-sm">
                 <thead>
                   <tr className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800">
                     <th className="px-4 py-3 font-medium text-zinc-700 dark:text-zinc-300">

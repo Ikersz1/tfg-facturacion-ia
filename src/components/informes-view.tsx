@@ -183,7 +183,7 @@ export function InformesView({ data }: { data: ReportsData }) {
       <section className="rounded-2xl border border-zinc-200/90 bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-900/80">
         <h2 className="mb-4 text-sm font-semibold text-blue-800 dark:text-sky-300">Clientes · ranking</h2>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[480px] text-left text-sm">
+          <table className="w-full min-w-[420px] text-left text-sm">
             <thead>
               <tr className="border-b border-zinc-100 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
                 <th className="py-2 pr-2 font-medium">Cliente</th>
@@ -202,7 +202,7 @@ export function InformesView({ data }: { data: ReportsData }) {
               ) : (
                 data.clientsRanking.map((r) => (
                   <tr key={r.clientId} className="border-b border-zinc-50 last:border-0 dark:border-zinc-800/80">
-                    <td className="max-w-[160px] truncate py-2 pr-2 font-medium text-zinc-900 dark:text-zinc-100">
+                    <td className="max-w-[120px] truncate py-2 pr-2 font-medium text-zinc-900 dark:text-zinc-100 sm:max-w-[160px]">
                       {isDemo ? (
                         r.name
                       ) : (
@@ -232,7 +232,7 @@ export function InformesView({ data }: { data: ReportsData }) {
           Por importe total de líneas (IVA incluido en línea) en facturas del periodo.
         </p>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[400px] text-left text-sm">
+          <table className="w-full min-w-[340px] text-left text-sm">
             <thead>
               <tr className="border-b border-zinc-100 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
                 <th className="py-2 font-medium">Concepto</th>

@@ -263,7 +263,7 @@ export function HomeDashboard({ data }: { data: DashboardData }) {
             ) : null}
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[520px] text-left text-sm">
+            <table className="w-full min-w-[420px] text-left text-sm">
               <thead>
                 <tr className="border-b border-zinc-100 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
                   <th className="px-4 py-2 font-medium sm:px-5">Número</th>
@@ -291,7 +291,7 @@ export function HomeDashboard({ data }: { data: DashboardData }) {
                           {row.numberLabel}
                         </Link>
                       </td>
-                      <td className="max-w-[140px] truncate px-4 py-2.5 text-zinc-700 dark:text-zinc-300 sm:px-5">
+                      <td className="max-w-[110px] truncate px-4 py-2.5 text-zinc-700 dark:text-zinc-300 sm:max-w-[140px] sm:px-5">
                         {row.clientName}
                       </td>
                       <td className="px-4 py-2.5 tabular-nums text-zinc-900 dark:text-zinc-100 sm:px-5">

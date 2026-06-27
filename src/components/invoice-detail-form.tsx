@@ -308,7 +308,7 @@ export function InvoiceDetailForm({
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+      <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 sm:p-6">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3 border-b border-zinc-200 pb-4 dark:border-zinc-700">
           <div>
             <p className="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
@@ -391,7 +391,7 @@ export function InvoiceDetailForm({
         invoice.verifacti_last_error ||
         invoice.verifacti_uuid) ? (
         <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
-          <div className="flex items-start justify-between gap-4 sm:gap-6">
+          <div className="flex flex-col items-start gap-4 sm:flex-row sm:justify-between sm:gap-6">
             <div className="min-w-0 flex-1">
               <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                 Verifactu (Verifacti)
@@ -444,7 +444,7 @@ export function InvoiceDetailForm({
               <img
                 src={verifactiQrDataUrl(invoice.verifacti_qr_base64)}
                 alt="QR Verifactu"
-                className="h-36 w-36 shrink-0 border border-zinc-200 bg-white object-contain dark:border-zinc-600"
+                className="mx-auto h-36 w-36 shrink-0 border border-zinc-200 bg-white object-contain dark:border-zinc-600 sm:mx-0"
               />
             ) : null}
           </div>
@@ -512,7 +512,7 @@ export function InvoiceDetailForm({
           ) : null
         ) : (
           <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
-            <table className="w-full min-w-[36rem] text-left text-sm">
+            <table className="w-full min-w-[32rem] text-left text-sm">
               <thead>
                 <tr className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800">
                   <th className="px-3 py-2">#</th>
@@ -533,7 +533,7 @@ export function InvoiceDetailForm({
                     <td className="px-3 py-2 tabular-nums text-zinc-600">
                       {l.line_number}
                     </td>
-                    <td className="max-w-[14rem] px-3 py-2 text-zinc-900 dark:text-zinc-50">
+                    <td className="max-w-[11rem] px-3 py-2 text-zinc-900 dark:text-zinc-50 sm:max-w-[14rem]">
                       {l.description}
                     </td>
                     <td className="px-3 py-2 text-right tabular-nums">
@@ -559,7 +559,7 @@ export function InvoiceDetailForm({
                             Cerrar edición
                           </button>
                         ) : (
-                          <div className="flex items-center gap-3">
+                          <div className="flex flex-col items-start gap-1.5 sm:flex-row sm:items-center sm:gap-3">
                             <button
                               type="button"
                               onClick={() => startEditingLine(l)}
@@ -892,7 +892,7 @@ export function InvoiceDetailForm({
         ) : null}
       </section>
 
-      <div className="flex flex-col gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-6 py-4 dark:border-zinc-800 dark:bg-zinc-900/40">
+      <div className="flex flex-col gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-900/40 sm:px-6">
         <div className="flex justify-between text-sm">
           <span className="text-zinc-600 dark:text-zinc-400">Base imponible</span>
           <span className="tabular-nums font-medium">
@@ -970,7 +970,7 @@ export function InvoiceDetailForm({
               ) : null
             ) : (
               <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
-                <table className="w-full min-w-[28rem] text-left text-sm">
+                <table className="w-full min-w-[24rem] text-left text-sm">
                   <thead>
                     <tr className="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800">
                       <th className="px-3 py-2">Fecha</th>
@@ -997,7 +997,7 @@ export function InvoiceDetailForm({
                         <td className="px-3 py-2 text-zinc-600 dark:text-zinc-400">
                           {p.method ?? "—"}
                         </td>
-                        <td className="max-w-[12rem] truncate px-3 py-2 text-zinc-600 dark:text-zinc-400">
+                        <td className="max-w-[9rem] truncate px-3 py-2 text-zinc-600 dark:text-zinc-400 sm:max-w-[12rem]">
                           {p.notes ?? "—"}
                         </td>
                       </tr>
@@ -1160,7 +1160,7 @@ export function InvoiceDetailForm({
         <div className="flex flex-col gap-4">
           <form
             action={issueForm}
-            className="flex flex-col gap-4 rounded-xl border border-brand-border bg-brand-soft p-6 dark:border-brand-border/50 dark:bg-brand-soft"
+            className="flex flex-col gap-4 rounded-xl border border-brand-border bg-brand-soft p-4 dark:border-brand-border/50 dark:bg-brand-soft sm:p-6"
           >
             <h3 className="font-semibold text-accent">
               Emitir factura
@@ -1206,7 +1206,7 @@ export function InvoiceDetailForm({
             <button
               type="submit"
               disabled={issuePending}
-              className="inline-flex h-10 max-w-xs items-center justify-center rounded-lg bg-brand px-4 text-sm font-medium text-brand-fg hover:bg-brand-hover disabled:opacity-60"
+              className="inline-flex h-10 w-full items-center justify-center rounded-lg bg-brand px-4 text-sm font-medium text-brand-fg hover:bg-brand-hover disabled:opacity-60 sm:max-w-xs"
             >
               {issuePending ? "Emitiendo…" : "Emitir y numerar"}
             </button>
@@ -1219,7 +1219,7 @@ export function InvoiceDetailForm({
                 e.preventDefault();
               }
             }}
-            className="flex flex-col gap-3 rounded-xl border border-rose-200 bg-rose-50 p-6 dark:border-rose-900/40 dark:bg-rose-950/20"
+            className="flex flex-col gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 dark:border-rose-900/40 dark:bg-rose-950/20 sm:p-6"
           >
             <h3 className="font-semibold text-rose-800 dark:text-rose-200">
               Eliminar borrador
@@ -1236,14 +1236,14 @@ export function InvoiceDetailForm({
             <button
               type="submit"
               disabled={deleteDraftPending}
-              className="inline-flex h-10 max-w-xs items-center justify-center rounded-lg bg-rose-600 px-4 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-60 dark:bg-rose-500 dark:hover:bg-rose-400"
+              className="inline-flex h-10 w-full items-center justify-center rounded-lg bg-rose-600 px-4 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-60 dark:bg-rose-500 dark:hover:bg-rose-400 sm:max-w-xs"
             >
               {deleteDraftPending ? "Eliminando…" : "Eliminar borrador"}
             </button>
           </form>
         </div>
       ) : (
-        <div className="flex flex-col gap-4 rounded-xl border border-rose-200 bg-rose-50 p-6 dark:border-rose-900/40 dark:bg-rose-950/20">
+        <div className="flex flex-col gap-4 rounded-xl border border-rose-200 bg-rose-50 p-4 dark:border-rose-900/40 dark:bg-rose-950/20 sm:p-6">
           <h3 className="font-semibold text-rose-800 dark:text-rose-200">
             Anular factura
           </h3>
@@ -1268,7 +1268,7 @@ export function InvoiceDetailForm({
             <button
               type="submit"
               disabled={cancelPending || displayStatus === "cancelled"}
-              className="inline-flex h-10 max-w-xs items-center justify-center rounded-lg bg-rose-600 px-4 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-60 dark:bg-rose-500 dark:hover:bg-rose-400"
+              className="inline-flex h-10 w-full items-center justify-center rounded-lg bg-rose-600 px-4 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-60 dark:bg-rose-500 dark:hover:bg-rose-400 sm:max-w-xs"
             >
               {cancelPending ? "Anulando…" : displayStatus === "cancelled" ? "Factura anulada" : "Anular factura"}
             </button>
