@@ -131,6 +131,7 @@ export function AssistantWidget() {
             initialQuestion={pendingQuestion}
             initialQuestionToken={pendingQuestionRequestId}
             onInitialQuestionConsumed={() => setPendingQuestion(undefined)}
+            onNavigateFromAssistant={close}
             suggestions={[
               "¿Qué cliente me debe más?",
               "¿Qué facturas vencen esta semana?",

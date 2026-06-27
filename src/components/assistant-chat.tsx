@@ -28,12 +28,14 @@ export function AssistantChat({
   initialQuestion,
   initialQuestionToken,
   onInitialQuestionConsumed,
+  onNavigateFromAssistant,
 }: {
   suggestions?: string[];
   mode?: "page" | "sidebar";
   initialQuestion?: string;
   initialQuestionToken?: number;
   onInitialQuestionConsumed?: () => void;
+  onNavigateFromAssistant?: () => void;
 }) {
   const isSidebar = mode === "sidebar";
   const [state, formAction, isPending] = useActionState(assistantAskAction, initial);
@@ -293,6 +295,7 @@ export function AssistantChat({
                       <Link
                         key={l.href}
                         href={l.href}
+                        onClick={isSidebar ? onNavigateFromAssistant : undefined}
                         className={`inline-flex items-center rounded-lg border px-2.5 py-1 text-xs font-medium transition ${
                           entry.role === "user"
                             ? "border-white/30 bg-white/15 text-brand-fg hover:bg-white/25"
