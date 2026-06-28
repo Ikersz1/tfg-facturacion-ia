@@ -24,6 +24,7 @@ import Link from "next/link";
 const initial: InvoiceActionState = {};
 const payInitial: PaymentActionState = {};
 const vfStatusInitial: VerifactiStatusActionState = {};
+const CREATE_CATALOG_ITEM_OPTION = "__create_catalog_item__";
 
 type Line = {
   id: string;
@@ -161,6 +162,11 @@ export function InvoiceDetailForm({
 
   const onAddLineProductChange = useCallback(
     (productId: string) => {
+      if (productId === CREATE_CATALOG_ITEM_OPTION) {
+        setAddLineProductId("");
+        router.push("/catalogo/new");
+        return;
+      }
       setAddLineProductId(productId);
       if (!productId) {
         setAddLineDescription("");
@@ -174,7 +180,7 @@ export function InvoiceDetailForm({
       setAddLineUnitPrice(formatUnitForInput(p.unit_price));
       setAddLineTaxRate(formatTaxForInput(p.tax_rate));
     },
-    [productById],
+    [productById, router],
   );
 
   const addLineAndMaybeClose = useCallback(
@@ -295,6 +301,11 @@ export function InvoiceDetailForm({
 
   const onEditLineProductChange = useCallback(
     (productId: string) => {
+      if (productId === CREATE_CATALOG_ITEM_OPTION) {
+        setEditLineProductId("");
+        router.push("/catalogo/new");
+        return;
+      }
       setEditLineProductId(productId);
       if (!productId) return;
       const p = productById.get(productId);
@@ -303,7 +314,7 @@ export function InvoiceDetailForm({
       setEditLineUnitPrice(formatUnitForInput(p.unit_price));
       setEditLineTaxRate(formatTaxForInput(p.tax_rate));
     },
-    [productById],
+    [productById, router],
   );
 
   return (
@@ -673,6 +684,7 @@ export function InvoiceDetailForm({
                       className="rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-50 dark:focus:border-blue-400 dark:focus:ring-blue-400/30"
                     >
                       <option value="">— Línea libre (sin catálogo) —</option>
+                      <option value={CREATE_CATALOG_ITEM_OPTION}>+ Crear producto/servicio</option>
                       {products.map((p) => (
                         <option key={p.id} value={p.id}>
                           {p.name} · {catalogKindLabel(parseCatalogKind(p.kind))} ·{" "}
@@ -801,6 +813,7 @@ export function InvoiceDetailForm({
                       className="rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 shadow-sm transition focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/25 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-50 dark:focus:border-blue-400 dark:focus:ring-blue-400/30"
                     >
                       <option value="">— Línea libre (sin catálogo) —</option>
+                      <option value={CREATE_CATALOG_ITEM_OPTION}>+ Crear producto/servicio</option>
                       {products.map((p) => (
                         <option key={p.id} value={p.id}>
                           {p.name} · {catalogKindLabel(parseCatalogKind(p.kind))} ·{" "}
