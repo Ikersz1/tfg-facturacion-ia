@@ -60,6 +60,10 @@ export async function askAssistant(
   if (payIntent) {
     return prepareRegisterPayment(ctx, payIntent.amountEur, payIntent.clientName);
   }
+  const paymentMissingDataReply = buildPaymentMissingDataReply(q);
+  if (paymentMissingDataReply) {
+    return paymentMissingDataReply;
+  }
 
   let toolCall = matchAssistantIntent(q);
   let usedLlmRouter = false;
@@ -165,6 +169,57 @@ function resolveClientNameFromRecentMemory(
     }
   }
   return null;
+}
+
+function buildPaymentMissingDataReply(question: string): AssistantReply | null {
+  if (!looksLikePaymentRegistrationIntent(question)) return null;
+
+  const amount = parseAmountEur(question);
+  const client = extractSpecificClientReference(question);
+
+  if (!amount && !client) {
+    return {
+      text: "Para registrar un cobro necesito dos datos: cliente e importe. Ejemplo: «He cobrado 400 de Talleres Nuria».",
+      links: [{ label: "Ver clientes", href: "/clients" }],
+    };
+  }
+  if (!amount) {
+    return {
+      text: "Perfecto. Indícame ahora el importe cobrado (por ejemplo: «400 euros»).",
+      links: [],
+    };
+  }
+  if (!client) {
+    return {
+      text: "Perfecto. ¿De qué cliente es ese cobro? Puedes escribir el nombre completo o una parte.",
+      links: [{ label: "Ver clientes", href: "/clients" }],
+    };
+  }
+
+  return null;
+}
+
+function looksLikePaymentRegistrationIntent(question: string): boolean {
+  const q = question.toLowerCase();
+  return (
+    /cobr|pagad|recib|ingres|entrada|abon|transfer|bizum|efectivo/i.test(q) &&
+    /(he |me han|me ha|acabo|registr|anota|apunta|quiero registrar|registra|cobro)/i.test(q)
+  );
+}
+
+function extractSpecificClientReference(question: string): string | null {
+  const m = question.match(/(?:de|del cliente|cliente)\s+(.+?)(?:[.,]|$)/i);
+  const raw = m?.[1]?.trim();
+  if (!raw) return null;
+  const normalized = raw.toLowerCase();
+  if (
+    /^(un|una|alg[uú]n|alguna|alguno|cliente|alg[uú]n cliente|un cliente|una cliente)\b/.test(
+      normalized,
+    )
+  ) {
+    return null;
+  }
+  return raw;
 }
 
 function dedupeLinks(links: { label: string; href: string }[]) {
