@@ -15,6 +15,7 @@ import type { InvoiceSeriesHints } from "@/lib/invoice-series-hints";
 
 const initial: InvoiceActionState = {};
 const CREATE_CLIENT_OPTION = "__create_client__";
+const INVOICE_SERIES_FOR_NEW_DRAFT = INVOICE_SERIES.filter((s) => s.id === "A");
 
 type ClientOption = { id: string; name: string };
 
@@ -104,7 +105,7 @@ export function NewInvoiceForm({
             onChange={(e) => setSeries(e.target.value as InvoiceSeriesId)}
             className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 outline-none focus:ring-2 focus:ring-brand/40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
           >
-            {INVOICE_SERIES.map((s) => (
+            {INVOICE_SERIES_FOR_NEW_DRAFT.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.label}
               </option>
