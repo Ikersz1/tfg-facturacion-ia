@@ -1,42 +1,95 @@
-# tfg-facturacion-ia
+# TFG Facturacion con IA
 
-Aplicación web de facturación con automatizaciones y agente de IA.
+Aplicacion web de facturacion orientada a pymes/autonomos con:
+- gestion de clientes, catalogo, facturas y cobros;
+- exportacion y generacion de PDF de factura;
+- integracion opcional con Verifacti;
+- automatizaciones opcionales con n8n;
+- asistente conversacional para consultas del panel.
 
----
+## Stack tecnico
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+- `Next.js` (App Router, Server Actions)
+- `TypeScript`
+- `Tailwind CSS`
+- `Supabase` (Auth + PostgreSQL + RLS)
+- `@react-pdf/renderer` para PDF
+- Integraciones opcionales: `OpenAI`, `Verifacti`, `n8n`
 
-## Getting Started
+## Funcionalidades principales
 
-First, run the development server:
+- Alta/edicion/listado de clientes.
+- Alta/edicion/listado de productos y servicios.
+- Creacion de facturas con lineas, estados y cobros.
+- Informes de facturacion y cobro.
+- Panel inicial con KPIs y tablas de seguimiento.
+- Asistente IA para consultas y aperturas de listados filtrados.
+
+## Requisitos
+
+- Node.js 20+
+- npm 10+ (o equivalente)
+- Proyecto de Supabase configurado
+
+## Puesta en marcha local
+
+1. Instalar dependencias:
+
+```bash
+npm install
+```
+
+2. Crear variables de entorno:
+
+```bash
+cp .env.local.example .env.local
+```
+
+3. Completar `.env.local` con tus valores.
+4. Lanzar en desarrollo:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+5. Abrir `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Variables de entorno
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Las variables necesarias estan documentadas en `.env.local.example` usando nombres y ejemplos ficticios.
 
-## Learn More
+Variables clave:
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY` (solo servidor; opcional segun flujos)
+- `VERIFACTI_NIF_API_KEY` (opcional)
+- `CRON_SECRET` (opcional)
+- `N8N_INVOICE_ISSUED_WEBHOOK_URL` (opcional)
+- `N8N_WEBHOOK_SECRET` (opcional)
+- `OPENAI_API_KEY` (opcional)
 
-To learn more about Next.js, take a look at the following resources:
+## Despliegue
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Despliegue recomendado en Vercel.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+La configuracion de entorno y cron esta documentada en:
+- `VERCEL.md`
+- `vercel.json`
 
-## Deploy on Vercel
+## Seguridad y privacidad
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- El repositorio no debe incluir secretos ni credenciales reales.
+- No subir archivos `.env*` con valores reales.
+- Usar datos anonimizados en semillas o ejemplos.
+- Rotar claves si alguna vez se han compartido fuera de un entorno seguro.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Documentacion adicional
+
+- `docs/asistente-ia.md`
+- `docs/n8n-flujo-1-factura-emitida.md`
+- `docs/n8n-flujo-2-recordatorio-morosos.md`
+- `docs/n8n-flujo-3-resumen-semanal.md`
+
+## Estado del proyecto
+
+Proyecto desarrollado como Trabajo Fin de Grado (TFG) con alcance funcional de MVP ampliado para facturacion diaria, reporting e integraciones opcionales.

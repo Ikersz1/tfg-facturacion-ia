@@ -30,13 +30,10 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env (no subir secretos; la plantilla sí va al repo)
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# env (no subir secretos; las plantillas sí van al repo)
+.env*
 !.env.local.example
+!.env.example
 
 # vercel
 .vercel
@@ -44,3 +41,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# archivos locales sensibles/no versionables
+scripts/
+supabase/scripts/seed-demo-data.sql
+supabase/scripts/seed-demo-invoices.sql
+supabase/scripts/seed-analytics-demo.sql
