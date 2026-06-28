@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import {
   createProductAction,
   type ProductActionState,
@@ -23,8 +23,9 @@ export function ProductForm({ defaultKind = "product", lockKind = true }: Props)
     createProductAction,
     initial,
   );
-
-  const isService = defaultKind === "service";
+  const [kind, setKind] = useState<CatalogKind>(defaultKind);
+  const displayKind = lockKind ? defaultKind : kind;
+  const isService = displayKind === "service";
 
   return (
     <form
@@ -53,7 +54,8 @@ export function ProductForm({ defaultKind = "product", lockKind = true }: Props)
                 type="radio"
                 name="kind"
                 value="product"
-                defaultChecked={defaultKind === "product"}
+                checked={kind === "product"}
+                onChange={() => setKind("product")}
                 className="size-4 border-zinc-300 text-brand focus:ring-brand/40"
               />
               <span className="text-zinc-800 dark:text-zinc-100">Producto</span>
@@ -63,7 +65,8 @@ export function ProductForm({ defaultKind = "product", lockKind = true }: Props)
                 type="radio"
                 name="kind"
                 value="service"
-                defaultChecked={defaultKind === "service"}
+                checked={kind === "service"}
+                onChange={() => setKind("service")}
                 className="size-4 border-zinc-300 text-brand focus:ring-brand/40"
               />
               <span className="text-zinc-800 dark:text-zinc-100">Servicio</span>
@@ -135,7 +138,7 @@ export function ProductForm({ defaultKind = "product", lockKind = true }: Props)
         disabled={pending}
         className="inline-flex h-10 items-center justify-center rounded-md bg-brand px-4 text-sm font-medium text-brand-fg transition hover:bg-brand-hover disabled:opacity-60"
       >
-        {pending ? "Guardando…" : `Guardar ${catalogKindLabel(defaultKind).toLowerCase()}`}
+        {pending ? "Guardando…" : `Guardar ${catalogKindLabel(displayKind).toLowerCase()}`}
       </button>
     </form>
   );

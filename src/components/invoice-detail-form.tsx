@@ -164,7 +164,7 @@ export function InvoiceDetailForm({
     (productId: string) => {
       if (productId === CREATE_CATALOG_ITEM_OPTION) {
         setAddLineProductId("");
-        router.push("/catalogo/new");
+        router.push("/catalogo/new?allowKindSelect=1");
         return;
       }
       setAddLineProductId(productId);
@@ -303,7 +303,7 @@ export function InvoiceDetailForm({
     (productId: string) => {
       if (productId === CREATE_CATALOG_ITEM_OPTION) {
         setEditLineProductId("");
-        router.push("/catalogo/new");
+        router.push("/catalogo/new?allowKindSelect=1");
         return;
       }
       setEditLineProductId(productId);

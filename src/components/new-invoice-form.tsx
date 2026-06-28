@@ -76,7 +76,7 @@ export function NewInvoiceForm({
             const clientId = e.target.value;
             if (clientId === CREATE_CLIENT_OPTION) {
               setSelectedClientId("");
-              router.push("/clients/new");
+              router.push("/clients/new?allowKindSelect=1");
               return;
             }
             setSelectedClientId(clientId);

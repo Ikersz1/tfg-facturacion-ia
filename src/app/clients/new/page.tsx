@@ -9,6 +9,7 @@ type PageProps = {
 export default async function NewClientPage({ searchParams }: PageProps) {
   const sp = await searchParams;
   const raw = typeof sp.kind === "string" ? sp.kind : undefined;
+  const allowKindSelect = sp.allowKindSelect === "1";
   const kind: ClientKind = parseClientKind(raw);
   const label = clientKindLabel(kind);
 
@@ -17,10 +18,10 @@ export default async function NewClientPage({ searchParams }: PageProps) {
       <PageHeader
         back={{ href: `/clients?kind=${kind}`, ariaLabel: "Volver a clientes" }}
         eyebrow="Facturación"
-        title={`Nuevo ${label.toLowerCase()}`}
+        title={allowKindSelect ? "Nuevo cliente" : `Nuevo ${label.toLowerCase()}`}
       />
       <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-8 sm:px-6">
-        <ClientForm key={kind} defaultKind={kind} lockKind />
+        <ClientForm key={kind} defaultKind={kind} lockKind={!allowKindSelect} />
       </div>
     </div>
   );
