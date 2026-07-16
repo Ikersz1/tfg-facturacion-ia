@@ -77,63 +77,65 @@ export function InvoicesFiltersPanel({
     <div className="mb-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
         <div className="flex min-w-0 flex-1 flex-wrap items-end gap-x-3 gap-y-2">
-        <div className="flex min-w-0 w-full flex-col gap-1 sm:w-auto">
-          <label htmlFor="flt-client" className={lbl}>
-            Cliente
-          </label>
-          <select
-            id="flt-client"
-            value={filters.client_id ?? ""}
-            onChange={(e) => commit({ client_id: e.target.value })}
-            className={`${ctrl} sm:w-[14rem]`}
-          >
-            <option value="">Todos</option>
-            {clients.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <div className="grid w-full min-w-0 grid-cols-1 gap-x-3 gap-y-2 sm:w-[calc(14rem+0.75rem+9.5rem)] sm:grid-cols-[14rem_9.5rem]">
+          <div className="flex min-w-0 flex-col gap-1">
+            <label htmlFor="flt-client" className={lbl}>
+              Cliente
+            </label>
+            <select
+              id="flt-client"
+              value={filters.client_id ?? ""}
+              onChange={(e) => commit({ client_id: e.target.value })}
+              className={ctrl}
+            >
+              <option value="">Todos</option>
+              {clients.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        <div className="flex w-full flex-col gap-1 sm:w-auto">
-          <label htmlFor="flt-status" className={lbl}>
-            Estado
-          </label>
-          <select
-            id="flt-status"
-            value={filters.status ?? ""}
-            onChange={(e) => commit({ status: e.target.value })}
-            className={`${ctrl} sm:w-[9.5rem]`}
-          >
-            {STATUS_OPTS.map((o) => (
-              <option key={o.value || "all"} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </div>
+          <div className="flex min-w-0 flex-col gap-1">
+            <label htmlFor="flt-status" className={lbl}>
+              Estado
+            </label>
+            <select
+              id="flt-status"
+              value={filters.status ?? ""}
+              onChange={(e) => commit({ status: e.target.value })}
+              className={ctrl}
+            >
+              {STATUS_OPTS.map((o) => (
+                <option key={o.value || "all"} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        <div className="flex min-w-0 w-full flex-col gap-1 sm:w-auto">
-          <span className={lbl}>Emisión (fecha factura)</span>
-          <div className="flex min-w-0 flex-col items-stretch gap-1.5 sm:flex-row sm:items-center">
-            <input
-              id="flt-from"
-              type="date"
-              value={filters.from ?? ""}
-              onChange={(e) => commit({ from: e.target.value })}
-              className={`${ctrl} sm:w-[10.25rem]`}
-              title="Desde"
-            />
-            <span className="hidden pb-1 text-xs text-zinc-400 sm:inline">a</span>
-            <input
-              id="flt-to"
-              type="date"
-              value={filters.to ?? ""}
-              onChange={(e) => commit({ to: e.target.value })}
-              className={`${ctrl} sm:w-[10.25rem]`}
-              title="Hasta"
-            />
+          <div className="flex min-w-0 flex-col gap-1 sm:col-span-2">
+            <span className={lbl}>Emisión (fecha factura)</span>
+            <div className="flex min-w-0 flex-col items-stretch gap-1.5 sm:flex-row sm:items-center">
+              <input
+                id="flt-from"
+                type="date"
+                value={filters.from ?? ""}
+                onChange={(e) => commit({ from: e.target.value })}
+                className={`${ctrl} flex-1`}
+                title="Desde"
+              />
+              <span className="hidden shrink-0 pb-1 text-xs text-zinc-400 sm:inline">a</span>
+              <input
+                id="flt-to"
+                type="date"
+                value={filters.to ?? ""}
+                onChange={(e) => commit({ to: e.target.value })}
+                className={`${ctrl} flex-1`}
+                title="Hasta"
+              />
+            </div>
           </div>
         </div>
 
