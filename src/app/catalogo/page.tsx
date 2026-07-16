@@ -19,6 +19,7 @@ export default async function CatalogoPage({ searchParams }: PageProps) {
   const sp = await searchParams;
   const filters = parseCatalogListSearch(sp);
   const kind = filters.kind;
+  const notice = typeof sp.notice === "string" ? sp.notice : undefined;
 
   const supabase = await createClient();
   const { data: rows, error } = await supabase
@@ -52,6 +53,30 @@ export default async function CatalogoPage({ searchParams }: PageProps) {
         </div>
 
         <section className="min-w-0">
+          {notice === "deleted" ? (
+            <p
+              className="mb-4 rounded-md bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100"
+              role="status"
+            >
+              {kind === "service" ? "Servicio" : "Producto"} eliminado correctamente.
+            </p>
+          ) : null}
+          {notice === "deactivated" ? (
+            <p
+              className="mb-4 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-100"
+              role="status"
+            >
+              No se pudo borrar del todo porque está usado en facturas; se ha marcado como inactivo.
+            </p>
+          ) : null}
+          {notice === "delete_error" ? (
+            <p
+              className="mb-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-900 dark:bg-red-950/40 dark:text-red-100"
+              role="alert"
+            >
+              No se pudo eliminar el {itemLabelSingular}. Inténtalo de nuevo.
+            </p>
+          ) : null}
           <div className="mb-3 flex items-baseline justify-between gap-3">
             <h2 className="text-base font-medium text-zinc-900 dark:text-zinc-100">{title}</h2>
             {totalItems > 0 ? (

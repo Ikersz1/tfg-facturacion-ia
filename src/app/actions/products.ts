@@ -138,17 +138,22 @@ export async function deleteProductAction(formData: FormData): Promise<void> {
     .eq("id", productId!)
     .eq("user_id", auth.userId);
 
+  let notice: "deleted" | "deactivated" = "deleted";
   if (error) {
     // Si hay facturas históricas vinculadas, ocultamos del catálogo activo.
-    await supabase
+    const { error: deactivateError } = await supabase
       .from("products")
       .update({ is_active: false, updated_at: new Date().toISOString() })
       .eq("id", productId!)
       .eq("user_id", auth.userId);
+    if (deactivateError) {
+      redirect(`/catalogo?kind=${kind}&notice=delete_error`);
+    }
+    notice = "deactivated";
   }
 
   revalidatePath("/catalogo");
-  redirect(`/catalogo?kind=${kind}`);
+  redirect(`/catalogo?kind=${kind}&notice=${notice}`);
 }
 
 function emptyToNull(v: FormDataEntryValue | null) {
