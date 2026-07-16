@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import {
   createProductAction,
+  updateProductAction,
   type ProductActionState,
 } from "@/app/actions/products";
 import { catalogKindLabel, type CatalogKind } from "@/lib/catalog-kind";
@@ -16,11 +17,27 @@ type Props = {
   defaultKind?: CatalogKind;
   /** Desde el catálogo: el tipo viene de la pestaña; no mostrar selector producto/servicio */
   lockKind?: boolean;
+  mode?: "create" | "edit";
+  productId?: string;
+  initialValues?: {
+    name?: string;
+    description?: string | null;
+    sku?: string | null;
+    unitPrice?: number;
+    taxRate?: number;
+    isActive?: boolean;
+  };
 };
 
-export function ProductForm({ defaultKind = "product", lockKind = true }: Props) {
+export function ProductForm({
+  defaultKind = "product",
+  lockKind = true,
+  mode = "create",
+  productId,
+  initialValues,
+}: Props) {
   const [state, formAction, pending] = useActionState(
-    createProductAction,
+    mode === "edit" ? updateProductAction : createProductAction,
     initial,
   );
   const [kind, setKind] = useState<CatalogKind>(defaultKind);
@@ -32,6 +49,7 @@ export function ProductForm({ defaultKind = "product", lockKind = true }: Props)
       action={formAction}
       className="mx-auto flex w-full max-w-lg flex-col gap-4 rounded-lg border border-zinc-200 bg-white p-6 dark:border-zinc-700 dark:bg-zinc-900"
     >
+      {mode === "edit" ? <input type="hidden" name="product_id" value={productId ?? ""} /> : null}
       {state?.error ? (
         <p
           className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-100"
@@ -79,12 +97,24 @@ export function ProductForm({ defaultKind = "product", lockKind = true }: Props)
         <span className="font-medium text-zinc-800 dark:text-zinc-200">
           Nombre <span className="text-red-600">*</span>
         </span>
-        <input name="name" required className={inputClass} placeholder={isService ? "Ej. Pack mantenimiento mensual" : "Ej. Licencia software anual"} />
+        <input
+          name="name"
+          required
+          className={inputClass}
+          placeholder={isService ? "Ej. Pack mantenimiento mensual" : "Ej. Licencia software anual"}
+          defaultValue={initialValues?.name ?? ""}
+        />
       </label>
 
       <label className="flex flex-col gap-1.5 text-sm">
         <span className="font-medium text-zinc-800 dark:text-zinc-200">Descripción</span>
-        <textarea name="description" rows={3} className={`${inputClass} resize-y`} placeholder="Detalle opcional para facturas o notas internas" />
+        <textarea
+          name="description"
+          rows={3}
+          className={`${inputClass} resize-y`}
+          placeholder="Detalle opcional para facturas o notas internas"
+          defaultValue={initialValues?.description ?? ""}
+        />
       </label>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -97,6 +127,7 @@ export function ProductForm({ defaultKind = "product", lockKind = true }: Props)
             name="sku"
             className={inputClass}
             placeholder={isService ? "Ej. SRV-CONS-01" : "Ej. EAN, código almacén…"}
+            defaultValue={initialValues?.sku ?? ""}
           />
         </label>
         <label className="flex flex-col gap-1.5 text-sm">
@@ -109,6 +140,9 @@ export function ProductForm({ defaultKind = "product", lockKind = true }: Props)
             inputMode="decimal"
             placeholder="0,00"
             className={inputClass}
+            defaultValue={
+              typeof initialValues?.unitPrice === "number" ? String(initialValues.unitPrice) : undefined
+            }
           />
         </label>
         <label className="flex flex-col gap-1.5 text-sm">
@@ -117,7 +151,9 @@ export function ProductForm({ defaultKind = "product", lockKind = true }: Props)
             name="tax_rate"
             inputMode="decimal"
             placeholder="21"
-            defaultValue="21"
+            defaultValue={
+              typeof initialValues?.taxRate === "number" ? String(initialValues.taxRate) : "21"
+            }
             className={inputClass}
           />
         </label>
@@ -127,7 +163,7 @@ export function ProductForm({ defaultKind = "product", lockKind = true }: Props)
         <input
           type="checkbox"
           name="is_active"
-          defaultChecked
+          defaultChecked={initialValues?.isActive ?? true}
           className="size-4 rounded border-zinc-300 text-brand"
         />
         Activo en facturas
@@ -138,7 +174,11 @@ export function ProductForm({ defaultKind = "product", lockKind = true }: Props)
         disabled={pending}
         className="inline-flex h-10 items-center justify-center rounded-md bg-brand px-4 text-sm font-medium text-brand-fg transition hover:bg-brand-hover disabled:opacity-60"
       >
-        {pending ? "Guardando…" : `Guardar ${catalogKindLabel(displayKind).toLowerCase()}`}
+        {pending
+          ? "Guardando…"
+          : mode === "edit"
+            ? "Guardar cambios"
+            : `Guardar ${catalogKindLabel(displayKind).toLowerCase()}`}
       </button>
     </form>
   );

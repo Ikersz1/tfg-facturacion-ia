@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { deleteProductAction } from "@/app/actions/products";
 import { CatalogKindTabs } from "@/components/catalog-kind-tabs";
 import { PageHeader } from "@/components/page-header";
 import { ListPagination } from "@/components/list-pagination";
@@ -94,6 +95,9 @@ export default async function CatalogoPage({ searchParams }: PageProps) {
                       <th className="px-4 py-3 font-medium text-zinc-700 dark:text-zinc-300">Precio</th>
                       <th className="px-4 py-3 font-medium text-zinc-700 dark:text-zinc-300">IVA</th>
                       <th className="px-4 py-3 font-medium text-zinc-700 dark:text-zinc-300">Estado</th>
+                      <th className="px-4 py-3 text-right font-medium text-zinc-700 dark:text-zinc-300">
+                        Acciones
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -111,6 +115,32 @@ export default async function CatalogoPage({ searchParams }: PageProps) {
                         </td>
                         <td className="px-4 py-3 text-sm text-zinc-600 dark:text-zinc-400">
                           {p.is_active ? "Activo" : "Inactivo"}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <details className="inline-block text-left">
+                            <summary className="cursor-pointer list-none rounded-md border border-zinc-200 px-2 py-1 text-sm text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800">
+                              <span className="sr-only">Abrir acciones</span>
+                              <span aria-hidden>⋯</span>
+                            </summary>
+                            <div className="mt-1 min-w-32 rounded-md border border-zinc-200 bg-white p-1 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+                              <Link
+                                href={`/catalogo/${p.id as string}/edit`}
+                                className="block rounded px-2 py-1.5 text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                              >
+                                Editar
+                              </Link>
+                              <form action={deleteProductAction}>
+                                <input type="hidden" name="product_id" value={p.id as string} />
+                                <input type="hidden" name="kind" value={kind} />
+                                <button
+                                  type="submit"
+                                  className="block w-full rounded px-2 py-1.5 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
+                                >
+                                  Eliminar
+                                </button>
+                              </form>
+                            </div>
+                          </details>
                         </td>
                       </tr>
                     ))}
